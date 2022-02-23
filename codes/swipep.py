@@ -92,7 +92,7 @@ def swipep(x,fs,plim,dt,dlog2p,dERBs,woverlap,sTHR):
             # j = find(d - (i + 1) < 1)
             # k = find(d[j] - (i + 1) > 0)
                 else:
-                    j = np.where(abs(d - (i + 1)) < 1.)[0]
+                    j = np.nonzero(abs(d - (i + 1)) < 1.)[0]
                     k = np.arange(0, j[0].size)  # transpose added by KG
                     # k = np.transpose(k1)
         # print('value of k: ',k)
