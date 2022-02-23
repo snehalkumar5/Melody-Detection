@@ -7,9 +7,9 @@ def dtw(x,y,addD):
     N2= np.size(Y,1)
     if addD==1:
         newmat = 0.5*(np.hstack(X[:,1:N1],X[:,N1-1:N1])-np.hstack(X[:,0:1],X[:,0:N1-1]))
-        X = numpy.vstack((X, 0.5*newmat))
+        X = np.vstack((X, 0.5*newmat))
         newmat = 0.5*(np.hstack(Y[:,1:N2],Y[:,N2-1:N2])-np.hstack(Y[:,0:1],Y[:,0:N2-1]))
-        Y = numpy.vstack((Y, 0.5*newmat))
+        Y = np.vstack((Y, 0.5*newmat))
     d = np.zeros(N1,N2)
     for n1 in range(N1):
         for n2 in range(N2):
@@ -31,7 +31,7 @@ def dtw(x,y,addD):
                 # only reachable from a lower n1
                 m[n1,n2] = 10
                 d[n1,n2] = d[n1-1,n2]+d[n1,n2]
-            else
+            else:
                 # reachable from 3 different points: vertical, horizontal, diagonal
                 dbackup = d[n1,n2]
                 d[n1,n2] = np.inf
@@ -41,16 +41,16 @@ def dtw(x,y,addD):
                     d[n1,n2] = dtry
                 dtry = d[n1-1,n2] + dbackup
                 if dtry<d[n1,n2]:
-                    m[n1,n2) = 10
+                    m[n1,n2] = 10
                     d[n1,n2] = dtry
-                dtry = d[n1-1,n2-1] + 1.5*dbackup;
+                dtry = d[n1-1,n2-1] + 1.5*dbackup
                 if dtry < d[n1,n2]:
                     m[n1,n2]=11
                     d[n1,n2]=dtry
     # global distance
     avd=d[N1-1,N2-1]
     # free space
-    d=[];
+    d=[]
     # backtracking
     ind1 = []
     ind2 = []
