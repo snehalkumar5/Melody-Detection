@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy import matlib
 from scipy.io import wavfile
+from matplotlib import mlab
 from scipy import signal
 from scipy import interpolate
 
@@ -59,21 +60,22 @@ def swipep(x,fs,plim,dt,dlog2p,dERBs,woverlap,sTHR):
     # Create ERB-scale uniformly-spaced frequencies (in Hertz)
     fERBs = erbs2hz(np.arange(hz2erbs(min(pc) / 4), hz2erbs(fs / 2), dERBs))
     # fERBs = erbs2hz(np.transpose(np.arange(hz2erbs(min(pc) / 4), hz2erbs(fs / 2), dERBs)))
-    # print('ferbs:',fERBs)
     for i in range(0, ws.size):
         dn = max(1, round( 8*(1-woverlap) * fs / pO[i])) # Hop size
         # Zero pad signal
-        # will = np.zeros((int(ws[i] / 2), 1))
-        # learn = np.reshape(x, -1, order='F')[:, np.newaxis]
-        # mir = np.zeros((int(dn + ws[i] / 2), 1))
-        # xzp1 = np.vstack((will, learn, mir))
-        # xzp = np.reshape(xzp1, len(xzp1), order='F')
         xzp = np.hstack((np.zeros((int(ws[i]/2))), x, np.zeros((int(dn + ws[i]/2)))))
         # Compute spectrum
         w = np.hanning(ws[i])  # Hann window
         o = int(max(0, round(ws[i] - dn)))  # Window overlap
 
-        [X, f, ti, im] = plt.specgram(xzp, NFFT=int(ws[i]), Fs=fs, window=w, noverlap=int(o))
+        # [X, f, ti, im] = plt.specgram(xzp, NFFT=int(ws[i]), Fs=fs, window=w, noverlap=int(o), mode='psd')
+        [X, f, ti] = mlab.specgram(xzp, NFFT=int(ws[i]), Fs=fs, window=w, noverlap=int(o), mode='psd')
+        with open('temp.txt','w') as wr:
+            print('X:',X,file=wr)
+        # print('X:',X)
+        # print('f:',f)
+        # print('ti:',ti)
+        # quit()
         # Select candidates that use this window size
         if ws.size == 1:
             j = np.transpose(pc)
@@ -82,27 +84,20 @@ def swipep(x,fs,plim,dt,dlog2p,dERBs,woverlap,sTHR):
             if i == ws.size:
                 j = np.nonzero(d - (i+1) > -1.)[0]
                 k = np.nonzero(d[j] - (i + 1) < 0.)[0]
-            # k = [val for val in d if val[j]-(i+1)<0]
-            # j = find(d - (i + 1) > -1)
-            # k = find(d[j] - (i + 1) < 0)
             else:
                 if i == 0:
                     j = np.nonzero(d - (i + 1) < 1.)[0]
                     k = np.nonzero(d[j] - (i + 1) > 0.)[0]
-            # j = find(d - (i + 1) < 1)
-            # k = find(d[j] - (i + 1) > 0)
                 else:
                     j = np.nonzero(abs(d - (i + 1)) < 1.)[0]
                     k = np.arange(0, j[0].size)  # transpose added by KG
                     # k = np.transpose(k1)
-        # print('value of k: ',k)
-        # print('value of j: ',j[0], pc[j[0]])
+
         # Interpolate at equidistant ERBs steps
         f = np.array(f)
         X1 = np.transpose(X)
         fERBs = fERBs[np.argmax(fERBs > pc[j[0]]/4) : ]
         # print(fERBs.shape)
-        # ip = interpolate.interp1d(f, abs(X1), kind='cubic', bounds_error=False, fill_value=0.0)(fERBs[:, np.newaxis])
         ip = interpolate.interp1d(f, abs(X1), kind='cubic', bounds_error=False, fill_value=0.0)(fERBs[:, np.newaxis])
         interpol = ip.transpose(2, 0, 1).reshape(-1, ip.shape[1])
         interpol1 = np.transpose(interpol)
@@ -125,7 +120,6 @@ def swipep(x,fs,plim,dt,dlog2p,dERBs,woverlap,sTHR):
         mu = ones(size(j))
         mu[k] = 1 - abs(lambda1)
         # print(mu[k])
-        # S[j, :] = S[j, :] + np.multiply(matlib.repmat(mu, 1, Si.shape[1]), Si)
         # S[j, :] = S[j, :] + np.multiply(((np.kron(np.ones((Si.shape[1], 1)), mu)).transpose()), Si)
         S[j] = S[j] + np.tile(mu, (Si.shape[1], 1)).T * Si
 
@@ -152,8 +146,6 @@ def swipep(x,fs,plim,dt,dlog2p,dERBs,woverlap,sTHR):
             s[j] = np.nanmax(polyval(c, nftc))
             k = np.argmax(polyval(c, nftc))
             p[j] = 2 ** (np.log2(pc[I[0]])) + (k - 1) / 12. / 100.
-            # p[j] = np.power(2, (np.log2(pc[I[0]]) + ((k - 1) / 12) / 100))
-    # p[np.isnan(s) - 1] = float('NaN') 
     return p, t, s
 
 
@@ -167,27 +159,11 @@ def pitchStrengthAllCandidates(f, L, pc):
     print('fshape',f.shape)
     for j in range(0,len(k)-1):
         k[j+1] = k[j] + np.argmax(f[np.int16(k[j]):] > pc[j]/4)
-        # ee = 1
-        # for idx,val in enumerate(f):
-        #     if idx>=k[j] and val > pc[j]/4:
-        #         print('gotval',ee, idx)
-        #         ee = idx
-        #         break
-        # t = np.where(f[k[j]:] > pc[j]/4)[0]
-        # print('t value: ',ee)
-        # if t.size == 0:
-            # t = [0]
-        # k[j+1] = k[j] - 1 + t[0]
     k = k[1:]
     # Create loudness normalization matrix
-    # print('matrix',cumsum(flipud(np.multiply(L,L)),axis=1))
     N = np.sqrt(flipud(cumsum(flipud(np.multiply(L,L)),axis=1)))
-    # print(N)
-    # print('L shape: ',L.shape)
     for j in range(0, len(pc)):
-        # print(j,k[j])
         n = N[k[j],:]
-        # print(n.shape)
         n[n==0] = -np.inf
         l1 = L[k[j]:,:]
         l2 = matlib.repmat(n,L.shape[0]-k[j],1)
