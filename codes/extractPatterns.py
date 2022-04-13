@@ -45,15 +45,15 @@ def extractPatterns():
             
             for iterVoicedSeg in range(voicedSeg.shape[0]):
                 pch[voicedSeg[iterVoicedSeg][0]:voicedSeg[iterVoicedSeg][1]]= weightedMedian(pch[voicedSeg[iterVoicedSeg][0]:voicedSeg[iterVoicedSeg][1]],score[voicedSeg[iterVoicedSeg][0]:voicedSeg[iterVoicedSeg][1]],10)
-            pch[1:voicedSeg[0][0]-1]= np.NaN
-            pch[(voicedSeg(voicedSeg.shape[0],2)+1):]= np.NaN
+            pch[:voicedSeg[0][0]-1]= np.NaN
+            pch[voicedSeg[voicedSeg.shape[0]][1]+1:]= np.NaN
             for iterSeg in range(1,voicedSeg.shape[0]):
                 pch[voicedSeg[iterSeg-1][1]:voicedSeg[iterSeg][0]]= interp1d([voicedSeg[iterSeg-1][1],voicedSeg[iterSeg][0]],[pch[voicedSeg[iterSeg-1][1]],pch[voicedSeg[iterSeg][0]]],np.linspace(voicedSeg[iterSeg-1][1],voicedSeg[iterSeg][0],voicedSeg[iterSeg][0]-voicedSeg[iterSeg-1][1]+1))
 
             pch[nonNanInds[0]:nonNanInds[-1]]= interp1d(nonNanInds,pch[nonNanInds],np.arange(nonNanInds[0],nonNanInds[-1]),'linear')
             styPch[:-1]= np.NaN
             
-            _,_,styPch[voicedSeg[0][0]:voicedSeg[-1][2]],_=dp_weighted_optpolysegsfit(pch[voicedSeg[0][0]:voicedSeg[-1][1]],nSyls,1,score[voicedSeg[0][0]:voicedSeg[-1][1]])
+            _,_,styPch[voicedSeg[0][0]:voicedSeg[-1][2]],_ = dp_weighted_optpolysegsfit(pch[voicedSeg[0][0]:voicedSeg[-1][1]],nSyls,1,score[voicedSeg[0][0]:voicedSeg[-1][1]])
             fname = outDir + currFile[:-5]
             fd = open(fname,'w')
             fd.write('styPch')
