@@ -69,11 +69,11 @@ def swipep(x,fs,plim,dt,dlog2p,dERBs,woverlap,sTHR):
         o = int(max(0, round(ws[i] - dn)))  # Window overlap
 
         # [X, f, ti, im] = plt.specgram(xzp, NFFT=int(ws[i]), Fs=fs, window=w, noverlap=int(o), mode='psd')
-        [X, f, ti] = mlab.specgram(xzp, NFFT=int(ws[i]), Fs=fs, window=w, noverlap=int(o), mode='psd')
-        with open('temp.txt','w') as wr:
-            print('X:',X,file=wr)
-        # print('X:',X)
-        # print('f:',f)
+        [X, f, ti] = mlab.specgram(xzp, NFFT = int(ws[i]), Fs=fs, window=w, noverlap=int(o), mode='psd')
+        # with open('temp.txt','w') as wr:
+        #     print('X:',X,file=wr)
+        print('X:',X)
+        print('f:',f)
         # print('ti:',ti)
         # quit()
         # Select candidates that use this window size
