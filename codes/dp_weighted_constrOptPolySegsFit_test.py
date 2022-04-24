@@ -25,7 +25,7 @@ def dp_weighted_constrOptPolySegsFit_test(vin, W, nSyls):
             if currPattern[-1]==5 and (len(currPattern)==1 and nSyls>1):
                 E_all[iterPattern] = 999999999999
             else:
-                [Ns_all{iterPattern},p_all{iterPattern},y_all{iterPattern},E_all(iterPattern)]= currOptPolysegFit(vin,W,currPattern)
+                [Ns_all[iterPattern],p_all[iterPattern],y_all[iterPattern],E_all[iterPattern]]= currOptPolysegFit(vin,W,currPattern)
 
     optPattern = np.argmin(E_all)
     Ns= Ns_all[optPattern]
@@ -36,12 +36,14 @@ def dp_weighted_constrOptPolySegsFit_test(vin, W, nSyls):
 def currOptPolysegFit(vin,W,currPattern):
     P = 1
     if not W:
-    temp_in= vin(~isnan(W))
-    temp_W= W(~isnan(W))
+        temp_in = vin
+        temp_W = W
+
     minW= min(temp_W)
     maxIn= max(temp_in(temp_W>(0.5*(range(temp_W))+minW)))
     minIn= min(temp_in(temp_W<(0.5*(range(temp_W))+minW)))
-    thLowHigh_prev= 0.5*(maxIn-minIn)+minIn; thLowHigh= thLowHigh_prev;
+    thLowHigh_prev= 0.5*(maxIn-minIn)+minIn
+    thLowHigh= thLowHigh_prev
     iterContinue= 1
     while iterContinue:
         highInInds= np.argwhere(temp_in>=thLowHigh_prev)[0]
@@ -73,21 +75,22 @@ def currOptPolysegFit(vin,W,currPattern):
     if K==1: # ONE LINE SEGMENT IS TRIVIAL
         Ns=np.array([1, Nin])
         if currPattern == 3:
-            [p1,yy]=constr_weighted_polyfit(np.arange(0,Nin),vin,W,P,np.array([]))
-            if p1(2)>0:
-                [p1,yy]= constr_weighted_polyfit(np.arange(0,Nin),vin,W,0,np.array([]))
+            p1,yy=constr_weighted_polyfit(np.arange(0,Nin),vin,W,P,np.array([]))
+            if p1[1]>0:
+                p1,yy= constr_weighted_polyfit(np.arange(0,Nin),vin,W,0,np.array([]))
             else:
-                rangeCovered= abs(yy[-1]-yy(1))
+                rangeCovered= abs(yy[-1]-yy[0])
                 if rangeCovered < (thLowHigh-minIn):
-                    [p1,yy]= constr_weighted_polyfit(np.arange(0,Nin),vin,W,0,np.array([]))
+                    p1,yy= constr_weighted_polyfit(np.arange(0,Nin),vin,W,0,np.array([]))
         if currPattern == 4:
-            [p1,yy]=constr_weighted_polyfit(np.arange(0,Nin),vin,W,P,np.array([]))
-            if p1(2)<0:
-                [p1,yy]= constr_weighted_polyfit(np.arange(0,Nin),vin,W,0,np.array([]))
+            p1,yy=constr_weighted_polyfit(np.arange(0,Nin),vin,W,P,np.array([]))
+            if p1[1]<0:
+                p1,yy= constr_weighted_polyfit(np.arange(0,Nin),vin,W,0,np.array([]))
             else:
-                rangeCovered= abs(yy[-1]-yy(1))
+                rangeCovered= abs(yy[-1]-yy[0])
                 if rangeCovered < (thLowHigh-minIn):
-                    [p1,yy]= constr_weighted_polyfit(np.arange(0,Nin),vin,W,0,np.array([]))
+                    p1,yy= constr_weighted_polyfit(np.arange(0,Nin),vin,W,0,np.array([]))
+        p = {}
         p[1]=p1
         y= yy
         E=np.sum(np.multiply((W),np.power((vin-y),2)))/len(y)
@@ -105,14 +108,15 @@ def currOptPolysegFit(vin,W,currPattern):
                 if np.max(W[l:i])>th_w:
                     tmp=vin[l:i]
                     if currPattern[0] == 1:
-                        [p1,yy]=constr_weighted_polyfit([l:i]/ND,tmp,W(l:i),0,[])
+                        p1,yy=constr_weighted_polyfit(np.arange(l,i)/ND,tmp,W[l:i],0,np.array([]))
                         if p1>thLowHigh:
-                            p1,yy=constr_weighted_polyfit(np.arange(l,i)/ND,tmp,W(l:i),0,thLowHigh)
+                            p1,yy=constr_weighted_polyfit(np.arange(l,i)/ND,tmp,W[l:i],0,thLowHigh)
                     if currPattern[0] == 2:
-                            [p1,yy]=constr_weighted_polyfit([l:i]/ND,tmp,W(l:i),0,[])
-                            if p1<=thLowHigh; [p1,yy]=constr_weighted_polyfit([l:i]/ND,tmp,W(l:i),0,thLowHigh); end
+                        p1,yy=constr_weighted_polyfit(np.arange(l,i)/ND,tmp,W[l:i],0,np.array([]))
+                        if p1<=thLowHigh:
+                            p1,yy=constr_weighted_polyfit(np.arange(l,i)/ND,tmp,W[l:i],0,thLowHigh)
                     if currPattern[0] == 3:
-                            [p1,yy]=constr_weighted_polyfit([l:i]/ND,tmp,W(l:i),P,[])
+                            p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vtm[,W(]:i[,P,]]
                             if p1(2)>0:
                                 [p1,yy]= constr_weighted_polyfit([l:i]/ND,tmp,W(l:i),0,[])
                             else:
@@ -120,14 +124,14 @@ def currOptPolysegFit(vin,W,currPattern):
                                 if rangeCovered < (thLowHigh-minIn):
                                     [p1,yy]= constr_weighted_polyfit([l:i]/ND,tmp,W(l:i),0,[])
                     if currPattern[0] == 4:
-                            [p1,yy]=constr_weighted_polyfit([l:i]/ND,tmp,W(l:i),P,[])
+                            p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vtm[,W(]:i[,P,]]
                             if p1(2)<0:
                                 [p1,yy]= constr_weighted_polyfit([l:i]/ND,tmp,W(l:i),0,[]);
                             else
-                                rangeCovered= abs(yy(end)-yy(1));
+                                rangeCovered= abs(yy[:]-yy(1));
                                 if rangeCovered < (thLowHigh-minIn)
                                     [p1,yy]= constr_weighted_polyfit([l:i]/ND,tmp,W(l:i),0,[]);
-                    cost=sum((W(l:i)).*((tmp-yy).^2));v= yy(end);
+                    cost=sum((W(l:i)).*((tmp-yy).^2));v= yy[:];
                     tmp1=[tmp1 cost]
                     tmpv=[tmpv v]
                 else:
@@ -142,73 +146,70 @@ def currOptPolysegFit(vin,W,currPattern):
         #ITERATION
         for k in range(1,K):
             for l= P+1+(k-1)*P:Nin #%searchInds(searchInds>=P+1+(k-1)*P) %P+1+(k-1)*P:Nin  %l=k:Nin
-                tmp=[];tmpv=[];
-                for i= 1:l-P
-                    if max(W(i:l))>th_w
-                        switch currPattern(k)
-                            case 1
-                                if currPattern(k-1)==2
-                                    [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),0,[]);
-                                    if p1>thLowHigh; [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),0,thLowHigh); end
-                                else
-                                    [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),0,vall(i,k-1));
-                                    if p1>thLowHigh; [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),0,-10^12); end
-                                end
-                            case 2
-                                if currPattern(k-1)==1
-                                    [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),0,[]);
-                                    if p1<thLowHigh; [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),0,thLowHigh); end
-                                else
-                                    [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),P,vall(i,k-1));
-                                    if p1>thLowHigh; [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),0,10^12); end
-                                end
-                            case 3
-                                [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),P,vall(i,k-1));
-                                if p1(2)>0;
-                                    [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),0,vall(i,k-1));
-                                else
-                                    rangeCovered= abs(yy(end)-yy(1));
-                                    if rangeCovered < (thLowHigh-minIn)
-                                        [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),0,vall(i,k-1));
-                                    end
-                                end
-                            case 4
-                                [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),P,vall(i,k-1));
-                                if p1(2)<0;
-                                    [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),0,vall(i,k-1));
-                                else
-                                    rangeCovered= abs(yy(end)-yy(1));
-                                    if rangeCovered < (thLowHigh-minIn)
-                                        [p1,yy]=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),0,vall(i,k-1));
-                                    end
-                                end
-                        end
-                        cost=sum((W(i+1:l)).*((in(i+1:l)-yy(2:end)).^2));v=yy(end);
+                tmp=[] 
+                tmpv=[]
+                for i in range(l-P):
+                    if np.max(W[i:l])>th_w:
+                        if currPattern[k] == 1:
+                            if currPattern[k-1]==2:
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],0,[])
+                                if p1>thLowHigh; p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],0,thLowHigh)
+                            else
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],0,vall(i,k-1))
+                                if p1>thLowHigh; p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],0,-10^12); -
+                            -1
+                        if currPattern[k] == 2:
+                            if currPattern[k-1]==1:
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],0,[])
+                                if p1<thLowHigh:
+                                    p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],0,thLowHigh)
+                            else:
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],P,vall(i,k-1))
+                                if p1>thLowHigh:
+                                    p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],0,10^12)
+                            -1
+                        if currPattern[k] == 3:
+                            p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],P,vall(i,k-1))
+                            if p1(2)>0;
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],0,vall(i,k-1))
+                            else
+                                rangeCovered= abs(yy[:]-yy(1));
+                                if rangeCovered < (thLowHigh-minIn)
+                                    p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],0,vall(i,k-1))
+                                -1
+                            -1
+                        if currPattern[k] == 4:
+                            p1,yy=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),P,vall(i,k-1));
+                            if p1(2)<0:
+                                p1,yy=constr_weighted_polyfit([i:l]/ND,in(i:l),W(i:l),0,vall(i,k-1));
+                            else:
+                                rangeCovered= abs(yy[:]-yy(1));
+                                if rangeCovered < (thLowHigh-minIn)
+                                    p1,yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],0,vall(i,k-1))
+                        cost=sum((W(i+1:l)).*((in(i+1:l)-yy(2:-1)).^2));v=yy[:];
                         tmp=[tmp D(i,k-1)+cost];
                         tmpv=[tmpv v];
                     else
                         cost=10^12;
                         tmp=[tmp D(i,k-1)+cost];
                         tmpv=[tmpv 10^12];
-                    end
-                end
-                [val,ind]=min(tmp);
-                D(l,k)=val;
-                bp(l,k)= ind;
-                vall(l,k)=tmpv(ind);
-            end
-        end
+
+                val = np.min(tmp)
+                ind = np.argmin(tmp)
+                D[l][k]=val
+                bp[l][k]= ind
+                vall[l][k]=tmpv(ind)
         
-        %TERMINATION AND BACKTRACKING
-        Ns=[];
-        tmp=Nin;
-        for i=K:-1:1
-            Ns=[bp(tmp,i) Ns];
-            tmp=bp(tmp,i);
-        end
-        Ns=[Ns Nin];
-        
-        %RECONSTRUCTION
+        #TERMINATION AND BACKTRACKING
+        Ns=[]
+        tmp=Nin
+        at = np.arange(K,0,-1)
+        for i in at:
+            Ns=[bp[tmp][i],Ns]
+            tmp=bp[tmp][i]
+        Ns=[Ns,Nin]
+
+        #RECONSTRUCTION
         cnt=1;y=[];
         for i=1:len(Ns)-1
             tmpX= [Ns(i):Ns(i+1)]/ND;
@@ -218,91 +219,72 @@ def currOptPolysegFit(vin,W,currPattern):
                 if i==1
                     switch(currPattern(i))
                         case 1
-                            [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,[]);
-                            if p1>thLowHigh; [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,thLowHigh); end
+                            p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[]);]                            if p1>thLowHigh; p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[hLo]High); -
                         case 2
-                            [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,[]);
-                            if p1<thLowHigh; [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,thLowHigh); end
+                            p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[]);]                            if p1<thLowHigh; p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[hLo]High); -
                         case 3
-                            [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,P,[]);
-                            if p1(2)>0;
-                                [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,[]);
-                            else
-                                rangeCovered= abs(yy(end)-yy(1));
+                            p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]P,[]);]                            if p1(2)>0
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[]);]                            els
+                                rangeCovered= abs(yy[:]-yy(1));
                                 if rangeCovered < (thLowHigh-minIn)
-                                    [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,[]);
-                                end
-                            end
+                                    p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[]);]                                -
+                            -1
                         case 4
-                            [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,P,[]);
-                            if p1(2)<0;
-                                [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,[]);
-                            else
-                                rangeCovered= abs(yy(end)-yy(1));
+                            p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]P,[]);]                            if p1(2)<0
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[]);]                            els
+                                rangeCovered= abs(yy[:]-yy(1));
                                 if rangeCovered < (thLowHigh-minIn)
-                                    [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,[]);
-                                end
-                            end
-                    end
+                                    p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[]);]                                -
+                            -1
+                    -1
                     p1=p1';
-                    y= yy; v= yy(end);
+                    y= yy; v= yy[:];
                 else
                     switch currPattern(i)
                         case 1
                             if currPattern(i-1)==2
-                                [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,[]);
-                                if p1>thLowHigh; [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,thLowHigh); end
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[]);]                                if p1>thLowHigh; p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[hLo]High); -
                             else
-                                [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,v);
-                                if p1>thLowHigh; [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,-10^12); end
-                            end
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[);
+]                               if p1>thLowHigh; p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[10^]2); -
+                            -1
                             
                         case 2
                             if currPattern(i-1)==1
-                                [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,[]);
-                                if p1<thLowHigh; [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,thLowHigh); end
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[]);]                                if p1<thLowHigh; p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[hLo]High); -
                             else
-                                [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,v);
-                                if p1<thLowHigh; [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,10^12); end
-                            end
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[);
+]                               if p1<thLowHigh; p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[0^1]); -
+                            -1
                         case 3
-                            [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,P,v);
-                            if p1(2)>0;
-                                [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,v);
-                            else
-                                rangeCovered= abs(yy(end)-yy(1));
+                            p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]P,[);
+]                           if p1(2)>0
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[);
+]                           els
+                                rangeCovered= abs(yy[:]-yy(1));
                                 if rangeCovered < (thLowHigh-minIn)
-                                    [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,v);
-                                end
-                            end
+                                    p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[);
+]                               -
+                            -1
                         case 4
-                            [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,P,v);
-                            if p1(2)<0;
-                                [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,v);
-                            else
-                                rangeCovered= abs(yy(end)-yy(1));
+                            p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]P,[);
+]                           if p1(2)<0
+                                p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[);
+]                           els
+                                rangeCovered= abs(yy[:]-yy(1));
                                 if rangeCovered < (thLowHigh-minIn)
-                                    [p1,yy]=constr_weighted_polyfit(tmpX,tmpIn,tmpW,0,v);
-                                end
-                            end
-                    end
-                    p1=p1';
-                    y=[y yy(2:end)];v=yy(end);
-                end
-            else
-                if i==1
+                                    p1,yy=constr_weighted_polyfit(np.arange(i,l+1)tmpIvn,[mpW]0,[);
+]                   y=[y yy(2:-1)];v=yy[:]
+            else:
+                if i==1:
                     p1=10^12;
-                    yy= ones(1,len(tmpIn))*10^12;
-                    y=yy;v=yy(end);
-                else
+                    yy= np.ones((1,len(tmpIn)))*10^12;
+                    y=yy;v=yy[:];
+                else:
                     p1=10^12;
-                    yy= ones(1,len(tmpIn))*10^12;
-                    y=[y yy(2:end)];v=yy(end);
-                end
-            end
+                    yy= np.ones((1,len(tmpIn)))*10^12;
+                    y=[y,yy[2:]]
+                    v=yy[-1]
             p{cnt}=p1; cnt=cnt+1;
-        end
-    end
-E=sum(W(Ns(1):Ns(end)).*((in(Ns(1):Ns(end))-y).^2))/len(y);
-
+        E=np.sum(np.multiply(W(Ns(1):Ns[:]),np.power((vin(Ns(1):Ns[:])-y)),2)))/len(y)
     return Ns, p, y, E
