@@ -66,7 +66,7 @@ def dp_weighted_optpolysegsfit(vin,K,P,W):
         
         #ITERATION
         for k in range(1,K):
-            for l in range(P+1+(k-1)*P,Nin):  #l=k:Nin
+            for l in range(P+1+(k-1)*P,Nin):  #l=k:Nin  
                 tmp=np.array([])
                 tmpv=np.array([])
 

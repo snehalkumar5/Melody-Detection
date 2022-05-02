@@ -1,7 +1,11 @@
 import numpy as np
 
 def weightedMedian(sig,W,order):
+    print('SIG',sig,'w',W,'order',order)
     nSig = len(sig)
+    sig = np.reshape(sig,(sig.shape[0],1))
+    W = np.reshape(W,(W.shape[0],1))
+    print(nSig)
     if order%2 != 1:
         m = order/2
     else:
@@ -15,8 +19,9 @@ def weightedMedian(sig,W,order):
     indc = np.arange(1,nSig+1)
     indc = np.reshape(indc,(1,indc.shape[0]))
     i1 = np.tile(indc[:nSig],(order,1))
-    i2 = np.tile(indr[:nSig],(1,order))
+    i2 = np.tile(indr[:],(1,nSig))
     ind = i1+i2
+    print(ind, ind.shape)
     xx = np.reshape(X[ind-1],(order,nSig))
     ww = np.reshape(w[ind-1],(order,nSig))
     for i in range(ww.shape[1]):
@@ -64,6 +69,6 @@ def weightedMedian_chunk(D,W):
     
     return wMed
 
-a = np.array([[1],[2],[3]])
-b = np.array([[22],[1],[4]])
-print(weightedMedian(a,b,3))
+# a = np.array([[1],[2],[3]])
+# b = np.array([[22],[1],[4]])
+# print(weightedMedian(a,b,3))
