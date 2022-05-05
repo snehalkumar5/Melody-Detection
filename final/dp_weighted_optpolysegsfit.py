@@ -15,6 +15,9 @@ def dp_weighted_optpolysegsfit(vin,K,P,W):
     
     OTHER REQUIRED FUNCTIONS: constr_polyfit.m, polyfit.m, polyval.m
     """
+    print()
+    print("args")
+    print(vin,K,P,W)
     if len(sys.argv) < 2:
         raise Exception('[Ns,p,y,E]=dp_weighted_optpolysegsfit(vin,K,P,W) --- provide the number of line segments (K) and polynomial order (P)') 
 

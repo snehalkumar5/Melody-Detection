@@ -5,6 +5,7 @@ from scipy.interpolate import interp1d
 from swipep import swipep
 from weightedMedian import weightedMedian
 from dp_weighted_optpolysegsfit import dp_weighted_optpolysegsfit
+import matplotlib.pyplot as plt
 
 def createSpeakerGraph(currFile):
     intonationStressDir= '../intonation_stress/'
@@ -22,14 +23,15 @@ def createSpeakerGraph(currFile):
     signal = signal/32767
 
     pch,_,score = swipep(signal,Fs,[75, 500],0.01,[],1/20,0.5,0.2)
-    print('swipep return size:',pch.shape,score.shape)
+    # print('swipep return size:',pch.shape,score.shape)
+    score= (score-np.min(score))/(np.max(score)-np.min(score))
     pch = np.nan_to_num(pch)
     pch= medfilt(pch,3) # 10 replaced with 3 here
     pch= 21.4*np.log10(1+0.00437*pch)
-
-    score= (score-np.min(score))/(np.max(score)-np.min(score))
+    plt.plot(pch)
+    plt.show()
     nonNanInds= np.where(pch!=0)[0]
-    print('len',len(nonNanInds))
+    # print('len',len(nonNanInds))
     if len(nonNanInds)>3:
         done= 1
         VuV_phns= np.sign(pch)
@@ -41,31 +43,33 @@ def createSpeakerGraph(currFile):
         tmp2 = np.array([tmp2]).T
 
         voicedSeg= np.hstack((tmp1,tmp2))
-        print(voicedSeg, voicedSeg.shape)
+        # print(voicedSeg, voicedSeg.shape)
         pch= pch-(np.sum(np.dot(pch[nonNanInds],score[nonNanInds])/np.sum(score[nonNanInds])))
         pch= pch/np.ptp(pch)
-        pch = np.reshape(pch,(pch.shape[0],1))
-        # pch = np.array([pch])
-        # score = np.array([score])
+        # pch = np.reshape(pch,(pch.shape[0],1))
         for iterVoicedSeg in range(voicedSeg.shape[0]):
             print(iterVoicedSeg)
             pch[voicedSeg[iterVoicedSeg][0]:voicedSeg[iterVoicedSeg][1]] = weightedMedian(pch[voicedSeg[iterVoicedSeg][0]:voicedSeg[iterVoicedSeg][1]], 
-                                                                            score[voicedSeg[iterVoicedSeg][0]:voicedSeg[iterVoicedSeg][1]], 10)
-        print('weighted done')
+                                                                            score[voicedSeg[iterVoicedSeg][0]:voicedSeg[iterVoicedSeg][1]], 10).flatten()
+        # print('weighted done')
+        # print(pch,voicedSeg,nonNanInds,nSyls,score)
         pch[:voicedSeg[0][0]-1]= np.NaN
         pch[voicedSeg[-1][1]:]= np.NaN
         for iterSeg in range(1,voicedSeg.shape[0]):
-            fnc = interp1d([voicedSeg[iterSeg-1][1],voicedSeg[iterSeg][0]],[pch[voicedSeg[iterSeg-1][1]],pch[voicedSeg[iterSeg][0]]])
-            ret_fn_interp1d = fnc(np.linspace(voicedSeg[iterSeg-1][1],voicedSeg[iterSeg][0],voicedSeg[iterSeg][0]-voicedSeg[iterSeg-1][1]+1))
+            a = np.vstack((voicedSeg[iterSeg-1][1],voicedSeg[iterSeg][0])).flatten()
+            b = np.vstack((pch[voicedSeg[iterSeg-1][1]],pch[voicedSeg[iterSeg][0]])).flatten()
+            print(a.shape,b.shape)
+            fnc = interp1d(a,b)
+            ret_fn_interp1d = fnc(np.linspace(voicedSeg[iterSeg-1][1],voicedSeg[iterSeg][0],voicedSeg[iterSeg][0]-voicedSeg[iterSeg-1][1]))
             pch[voicedSeg[iterSeg-1][1]:voicedSeg[iterSeg][0]] = ret_fn_interp1d
 
         func1 = interp1d(nonNanInds,pch[nonNanInds],'linear')
-        tmp1 = np.linspace(nonNanInds[0],nonNanInds[-1])
+        tmp1 = np.linspace(nonNanInds[0],nonNanInds[-1], nonNanInds[-1]-nonNanInds[0])
         ret_fn1_interp1d = func1(tmp1)
         pch[nonNanInds[0]:nonNanInds[-1]]= ret_fn1_interp1d
         # print('pch',pch)
         _,_,styPch,_ = dp_weighted_optpolysegsfit(pch[voicedSeg[0][0]:voicedSeg[-1][1]],nSyls,1,score[voicedSeg[0][0]:voicedSeg[-1][1]])
-        print('MAAAAAAAA',styPch)
+        # print('MAAAAAAAA',styPch)
         strr = str(outDir) + str(currFile[:-4])
         with open(strr,'w') as f:
             f.write(styPch)
@@ -75,4 +79,4 @@ def createSpeakerGraph(currFile):
     print('done',done)
     return done
 
-createSpeakerGraph('227.wav')
+# createSpeakerGraph('227.wav')
