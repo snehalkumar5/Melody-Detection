@@ -218,7 +218,7 @@ def pitch_strength_one_candidate(f, NL, pc):
 	k = np.zeros(f.shape) # Kernel
 
 	#Normalize frequency w.r.t. candidate
-	q = f / pc;
+	q = f / pc
 
 	# Create kernel
 	for i in np.concatenate((np.array([1.]), primes_from_2_to(n))):
@@ -239,13 +239,13 @@ def pitch_strength_one_candidate(f, NL, pc):
 	k = k / np.linalg.norm(k[k>0])
 
 	# Compute pitch strength
-	return k.dot(NL);
+	return k.dot(NL)
 
 def hz_to_erbs(hz):
 	return 6.44 * (np.log2(229. + hz) - 7.84)
 
 def erbs_to_hz(erbs):
-	return (2. ** (erbs / 6.44 + 7.84)) - 229.;
+	return (2. ** (erbs / 6.44 + 7.84)) - 229.
 
 # Taken from Stack Overflow:
 # http://stackoverflow.com/questions/2068372/fastest-way-to-list-all-primes-below-n/3035188#3035188

@@ -1,5 +1,5 @@
 import numpy as np
-from swipep import swipep
+from swipep_0 import swipep
 import audioread
 import scipy.signal
 from scipy.interpolate import interp1d

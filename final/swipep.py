@@ -3,7 +3,6 @@
 
 import math
 from os import listdir, getcwd
-from matplotlib import pylab
 from pylab import *
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,10 +11,12 @@ from scipy.io import wavfile
 from scipy import signal
 from scipy import interpolate
 
-WAVE_OUTPUT_FILENAME = '114.wav'  # Provide here the path to an audio
+WAVE_OUTPUT_FILENAME = '227.wav'  # Provide here the path to an audio
 
 
-def swipep(x, fs, plim, dt, dlog2p, dERBs, woverlap=None, sTHR=None):
+def swipep(x, fs, plim, dt, dlog2p, dERBs, woverlap, sTHR):
+    # print("yeeeeeeeeeeeeeeee")
+    np.seterr(divide='ignore', invalid='ignore')
     """Swipe pitch estimation method.
 
     It estimates the pitch of the vector signal X with sampling frequency Fs
@@ -27,7 +28,7 @@ def swipep(x, fs, plim, dt, dlog2p, dERBs, woverlap=None, sTHR=None):
     Pitches with a strength lower than STHR are treated as undefined.
     """
     if not plim:
-        plim = [100, 600]
+        plim = [30, 5000]
     if not dt:
         dt = 0.001
     if not dlog2p:
@@ -35,15 +36,15 @@ def swipep(x, fs, plim, dt, dlog2p, dERBs, woverlap=None, sTHR=None):
     if not dERBs:
         dERBs = 0.1
     if not sTHR:
-        sTHR = 0.3
+        sTHR = -float('Inf')
     if not woverlap:
         woverlap = 0.5
 
-    t = np.arange(0, len(x) / float(fs), dt)    # Times
-    dc = 4   # Hop size (in cycles)
+    t = np.arange(0.0, (len(x) / float(fs))+dt, dt)    # Times
+    dc = round(8*(1-woverlap))  # Hop size (in cycles)
     K = 2   # Parameter k for Hann window
     # Define pitch candidates
-    log2pc = np.arange(np.log2(plim[0]), np.log2(plim[len(plim) - 1]), dlog2p)
+    log2pc = np.arange(np.log2(plim[0]), np.log2(plim[1]), dlog2p)
     pc = np.power(2, log2pc)
 
     S = np.zeros(shape=(len(pc), len(t)))   # Pitch strength matrix
@@ -56,31 +57,28 @@ def swipep(x, fs, plim, dt, dlog2p, dERBs, woverlap=None, sTHR=None):
     d = 1 + log2pc - np.log2(np.multiply(4 * K, (np.divide(fs, ws[1 - 1]))))
     # Create ERBs spaced frequencies (in Hertz)
     fERBs = erbs2hz(np.arange(hz2erbs(pc[1 - 1] / 4), hz2erbs(fs / 2), dERBs))
-    print(len(ws))
+
     for i in range(0, len(ws)):
-        print(i)
         # for i in range(0, 1):
-        dn = round(dc * fs / pO[i])  # Hop size (in samples)
+        dn = int(round(dc * fs / pO[i]))  # Hop size (in samples)
         # Zero pad signal
-        will = np.zeros((int(ws[i] // 2), 1))
+        will = np.zeros((int(ws[i]/2), 1))
         learn = np.reshape(x, -1, order='F')[:, np.newaxis]
-        mir = np.zeros((int(dn + ws[i] / 2), 1))
+        mir = np.zeros((dn + int(ws[i]/ 2), 1))
         xzp = np.vstack((will, learn, mir))
         xk = np.reshape(xzp, len(xzp), order='F')
         # Compute spectrum
         w = np.hanning(ws[i])  # Hann window
         o = max(0, round(ws[i] - dn))  # Window overlap
-        [X, f, ti, im] = plt.specgram(xk, NFFT=int(ws[i]), Fs=fs, window=w, noverlap=int(o))
+        # [X, f, ti, im] = plt.specgram(xk, NFFT=int(ws[i]), Fs=fs, window=w, noverlap=int(o), mode='complex')
+        [f, ti, X] = signal.spectrogram(xk, nfft=int(ws[i]), fs=fs, window=w, noverlap=int(o), mode='complex')
+        # [f, ti, X] = signal.stft(xk, nfft=int(ws[i]), fs=fs, window=w, noverlap=int(o))
 
         # Interpolate at equidistant ERBs steps
         f = np.array(f)
         X1 = np.transpose(X)
 
-        ip = interpolate.interp1d(f, X1, kind='linear')(fERBs[:, np.newaxis])
-        interpol = ip.transpose(2, 0, 1).reshape(-1, ip.shape[1])
-        interpol1 = np.transpose(interpol)
-        M = np.maximum(0, interpol1)  # Magnitude
-        L = np.sqrt(M)  # Loudness
+        j=0
         # Select candidates that use this window size
         if i == (len(ws) - 1):
             j = np.where(d - (i + 1) > -1)
@@ -92,32 +90,37 @@ def swipep(x, fs, plim, dt, dlog2p, dERBs, woverlap=None, sTHR=None):
             j = np.where(abs(d - (i + 1)) < 1)
             k1 = np.arange(0, len(j))  # transpose added by KG
             k = np.transpose(k1)
+       
+        # fERBs = fERBs[np.where(fERBs > pc[j[0][0]]/4)[0][0]:]
+        ip = interpolate.interp1d(f, abs(X1), kind='cubic')(fERBs[:, np.newaxis])
+        interpol = ip.transpose(2, 0, 1).reshape(-1, ip.shape[1])
+        interpol1 = np.transpose(interpol)
+        M = np.maximum(0, interpol1)  # Magnitude
+        L = np.sqrt(M)  # Loudness
+
         Si = pitchStrengthAllCandidates(fERBs, L, pc[j])
         # Interpolate at desired times
         if Si.shape[1] > 1:
             tf = []
             tf = ti.tolist()
             tf.insert(0, 0)
-            del tf[-1]  
+            del tf[-1]
             ti = np.asarray(tf)
-            Si = interpolate.interp1d(ti, Si, 'linear', fill_value=nan)(t)
+            Si = interpolate.interp1d(ti, Si, 'linear', fill_value=np.nan)(t)
         else:
             Si = matlib.repmat(float('NaN'), len(Si), len(t))
-        k = k[0]
-        j = j[0]
-        lambda1 = d[j[k]] - (i + 1)
-        mu = ones(size(j))
+        lambda1 = np.take(d,np.take(j,k)) - (i + 1)
+        mu = np.ones(size(j))
         mu[k] = 1 - abs(lambda1)
         S[j, :] = S[j, :] + np.multiply(((np.kron(np.ones((Si.shape[1], 1)), mu)).transpose()), Si)
-        
+
     # Fine-tune the pitch using parabolic interpolation
     p = np.empty((Si.shape[1],))
     p[:] = np.NAN
     s = np.empty((Si.shape[1],))
     s[:] = np.NAN
-    print(Si.shape[1])
+    print()
     for j in range(0, Si.shape[1]):
-        print(j)
         s[j] = (S[:, j]).max(0)
         i = np.argmax(S[:, j])
         if s[j] < sTHR:
@@ -136,16 +139,17 @@ def swipep(x, fs, plim, dt, dlog2p, dERBs, woverlap=None, sTHR=None):
             # with warnings.catch_warnings():
             # warnings.filterwarnings('error')
             # try:
-            c = polyfit(ntc, (S[I, j]), 2)
+            c = np.polyfit(ntc, (S[I, j]), 2)
             # print "c: ", c
-            ftc = np.divide(1, np.power(2, np.arange(np.log2(pc[I[0]]), np.log2(pc[I[2]]), 0.00083333)))
+            ftc = np.divide(1, np.power(2, np.arange(np.log2(pc[I[0]]), np.log2(pc[I[2]]), 0.0013021)))
             nftc = ((ftc / tc[1]) - 1) * 2 * np.pi
-            s[j] = (polyval(c, nftc)).max(0)
-            k = np.argmax(polyval(c, nftc))
+            s[j] = (np.polyval(c, nftc)).max(0)
+            k = np.argmax(np.polyval(c, nftc))
             # except np.RankWarning:
             # print ("not enough data")
-            p[j] = 2 ** (np.log2(pc[I[0]]) + (k - 1) / 12 / 100)
+            p[j] = 2 ** (np.log2(pc[I[0]]) + (k - 1) / 768)
     p[np.isnan(s) - 1] = float('NaN')  # added by KG for 0s
+    print("returning sizes:",len(p),len(s)) 
     return p, t, s
 
 
@@ -185,7 +189,7 @@ def primeArr(n):
 
 def pitchStrengthOneCandidate(f, L, pc):
     """Normalize the square root of spectrum "L" by applying normalized cosine kernal decaying as 1/sqrt(f)."""
-    n = fix(f[-1] / pc - 0.75)
+    n = np.fix(f[-1] / pc - 0.75)
     k = np.zeros(size(f))
     q = f / pc
     for i in (primeArr(int(n))):
@@ -207,28 +211,27 @@ def pitchStrengthOneCandidate(f, L, pc):
 
 def hz2erbs(hz):
     """Converting hz to erbs."""
-    erbs = 6.44 * (np.log2(229 + hz ) -7.84)
+    erbs = 6.44 * (np.log2(229 + hz ) - 7.84)
     return erbs
 
 
 def erbs2hz(erbs):
     """Converting erbs to hz."""
-    hz = np.power(2, np.divide(erbs, 6.44)+7.84) - 229
+    hz = np.power(2, np.divide(erbs, 6.44) + 7.84) - 229
     return hz
 
 
-def swipe(audioPath):
-    """Read the audio file and output the pitches and pitch contour."""
-    print("Swipe running", audioPath)
-    fs, x = wavfile.read(audioPath)
-    np.seterr(divide='ignore', invalid='ignore')
-    p, t, s = swipep(x, fs, [75, 500], 0.01, [], 1/20, 0.5, 0.2)
-    print(np.unique(p))
-    print("Pitches: ", p)
-    print("Score:", s)
-    # fig = plt.figure()
-    # plt.plot(p)
-    # fig.savefig('hummed.png')
-    # plt.show()  # show in a window of contour on UI
+# def swipe(audioPath):
+#     """Read the audio file and output the pitches and pitch contour."""
+#     print("Swipe running", audioPath)
+#     fs, x = wavfile.read(audioPath)
+#     np.seterr(divide='ignore', invalid='ignore')
+#     p, t, s = swipep(x, fs, [75, 500],0.01,1.0/48.0,1.0/20.0,0.5,0.2)
+#     # print("Pitches: ", p)
+#     # print("Score: ", s)
+#     fig = plt.figure()
+#     plt.plot(p)
+#     fig.savefig('hummed.png')
+#     plt.show()  # show in a window of contour on UI
 
-# swipe('../audio/114.wav')
+# swipe(WAVE_OUTPUT_FILENAME)

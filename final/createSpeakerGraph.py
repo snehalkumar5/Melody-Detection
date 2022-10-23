@@ -22,14 +22,19 @@ def createSpeakerGraph(currFile):
     Fs, signal = wavfile.read(strr)
     signal = signal/32767
 
-    pch,_,score = swipep(signal,Fs,[75, 500],0.01,[],1/20,0.5,0.2)
-    # print('swipep return size:',pch.shape,score.shape)
+    pch,_,score = swipep(signal,Fs,[75, 500],0.01,1.0/96.0,1.0/20.0,0.5,0.2)
+    # print('swipep return size:',pch.shape,"score:",score.shape)
+    # for i in pch:
+        # print(i)
+    # print("score:")
+    for i in score:
+        print(i)
     score= (score-np.min(score))/(np.max(score)-np.min(score))
     pch = np.nan_to_num(pch)
     pch= medfilt(pch,3) # 10 replaced with 3 here
     pch= 21.4*np.log10(1+0.00437*pch)
-    plt.plot(pch)
-    plt.show()
+    # plt.plot(pch)
+    # plt.show()
     nonNanInds= np.where(pch!=0)[0]
     # print('len',len(nonNanInds))
     if len(nonNanInds)>3:

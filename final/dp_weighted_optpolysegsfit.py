@@ -18,34 +18,41 @@ def dp_weighted_optpolysegsfit(vin,K,P,W):
     print()
     print("args")
     print(vin,K,P,W)
-    if len(sys.argv) < 2:
-        raise Exception('[Ns,p,y,E]=dp_weighted_optpolysegsfit(vin,K,P,W) --- provide the number of line segments (K) and polynomial order (P)') 
+    vin = vin[:,np.newaxis]
+    W = W[:,np.newaxis]
+    # if len(argv) < 2:
+    #     raise Exception('[Ns,p,y,E]=dp_weighted_optpolysegsfit(vin,K,P,W) --- provide the number of line segments (K) and polynomial order (P)') 
 
-    if len(sys.argv) < 3:
-        raise Exception('[Ns,p,y,E]=dp_weighted_optpolysegsfit(vin,K,P,W) --- provide the polynomial order (P)') 
+    # if len(sys.argv) < 3:
+    #     raise Exception('[Ns,p,y,E]=dp_weighted_optpolysegsfit(vin,K,P,W) --- provide the polynomial order (P)') 
 
-    if len(sys.argv) < 4:
-        raise Exception('[Ns,p,y,E]=dp_weighted_optpolysegsfit(vin,K,P,W) --- provide the weight vector (W)') 
-
+    # if len(sys.argv) < 4:
+    #     raise Exception('[Ns,p,y,E]=dp_weighted_optpolysegsfit(vin,K,P,W) --- provide the weight vector (W)') 
+    print(len(vin))
     if vin.shape[0] > vin.shape[1]:
         vin = np.reshape(vin, (vin.shape[1],vin.shape[0]))
     if W.shape[0] > W.shape[1]:
         W = np.reshape(W, (W.shape[1],W.shape[0]))
 
-    Nin=len(vin) 
+    Nin=max(vin.shape[1],vin.shape[0])
+    print("nin",Nin)
     if Nin>10:
         ND=round(Nin/10) 
     else:
         ND= Nin 
     
-    if math.isnan(W):
-        W=0
-
+    np.nan_to_num(W,copy=False,nan=0.0)
     p = {}
 
+
+    #####
+    # TODOOOO
+    ######
     if K==1: # ONE LINE SEGMENT IS TRIVIAL
-        Ns=np.array([1,Nin])
-        p1, yy = constr_weighted_polyfit(np.arange(0,Nin),vin,W,P,np.array([]))
+        Ns = np.array([1,Nin])
+        aa = np.arange(1,Nin+1)
+        aa = np.reshape(aa,(1,len(aa)))
+        p1, yy = constr_weighted_polyfit(aa,vin,W,P,np.array([]))
         p[0]=p1 
         y = yy 
         E=np.mean(np.multiply(W,np.power((vin-y),2))) 
@@ -55,27 +62,37 @@ def dp_weighted_optpolysegsfit(vin,K,P,W):
          #COST MATRIX (999999999999 used for some arbitrarily large number):
         vall=999999999999*np.ones(shape=(Nin,K)) 
          #CONTINUITY CONSTRAINTS VALUE MATRIX
-        
+        print(W.shape)
         #INITIALIZATION
         for i in range(P+1,Nin):  #i=2:Nin:
-            tmp=vin[:i]
-            p1, yy=constr_weighted_polyfit(np.arange(0,i)/ND,tmp,W[:i],P,np.array([]))
+            tmp = np.reshape(vin.flatten(order='F')[0:i],(1,i))
+            aa = np.arange(1,i+1)
+            aa = np.reshape(aa,(1,len(aa)))
+            tempW = np.reshape(W.flatten(order='F')[0:i],(1,i))
+            p1, yy=constr_weighted_polyfit(aa/ND,tmp,tempW,P,np.array([]))
             p1=p1
-            D[i,0]=np.sum(np.multiply(W[:i],np.power((tmp-yy),2))) 
+            print(D[i][0].shape)
+            print(i, W[0][0:i].shape)
+            print(tmp.shape,yy.shape)
+            D[i][0]=np.sum(np.multiply(W[0][0:i],np.power((tmp-yy),2)))
+            v = yy[-1]
+            vall[i][0] = v
 
-        bp = [[] for i in range(Nin)]
-        bp[0]=np.ones(shape=(Nin,1))
+        # bp = [[] for i in range(Nin)]
+        bp=np.ones(shape=(Nin,K))
         #BACKPOINTER MATRIX
-        
+        print("Nin",Nin)
         #ITERATION
         for k in range(1,K):
-            for l in range(P+1+(k-1)*P,Nin):  #l=k:Nin  
+            print('k',k)
+            for l in range(k,Nin):  #l=k:Nin  
+                print('l',l)
                 tmp=np.array([])
                 tmpv=np.array([])
 
                 for i in range(l-P):
-                    p1, yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l],W[i:l],P,vall[i][k-1]) 
-                    cost=np.sum(np.multiply(W[i+1:l],np.power(vin[i+1:l]-yy[1:],2)))
+                    p1, yy=constr_weighted_polyfit(np.arange(i,l+1)/ND,vin[i:l+1],W[i:l+1],P,vall[i][k-1]) 
+                    cost=np.sum(np.multiply(W[i+1:l+1],np.power(vin[i+1:l+1]-yy[1:],2)))
                     v=yy[-1]
                     tmp=np.vstack((tmp,D[i][k-1]+cost))
                     tmpv=np.vstack((tmpv,v))
@@ -86,14 +103,16 @@ def dp_weighted_optpolysegsfit(vin,K,P,W):
                 bp[l][k]=ind 
                 vall[l][k]=tmpv[ind] 
 
-        
+        print('bp',bp)
         #TERMINATION AND BACKTRACKING
         Ns=np.array([])
-
-        at = np.arange(K,0,-1)
+        tmp=Nin-1
+        print(Nin)
+        at = np.arange(K-1,0,-1)
         for i in at:
+            print(i)
+            print(bp[tmp])
             Ns = np.vstack((bp[tmp][i],Ns))
-
             tmp=bp[tmp][i] 
 
         Ns = np.vstack((Ns,Nin))
