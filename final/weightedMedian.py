@@ -1,15 +1,15 @@
 import numpy as np
 
 def weightedMedian(sig,W,order):
-    print('SIG',sig,'w',W,'order',order)
     nSig = len(sig)
     sig = np.reshape(sig,(sig.shape[0],1))
     W = np.reshape(W,(W.shape[0],1))
-    print(nSig)
+
     if order%2 != 1:
         m = order/2
     else:
         m = (order-1)/2
+        
     m = int(m)
     X = np.vstack(( np.zeros((m,1)), sig, np.zeros((m,1)) ))
     w = np.vstack(( np.zeros((m,1)), W, np.zeros((m,1)) ))
@@ -21,7 +21,6 @@ def weightedMedian(sig,W,order):
     i1 = np.tile(indc[:nSig],(order,1))
     i2 = np.tile(indr[:],(1,nSig))
     ind = i1+i2
-    print(ind, ind.shape)
     xx = np.reshape(X[ind-1],(order,nSig))
     ww = np.reshape(w[ind-1],(order,nSig))
     for i in range(ww.shape[1]):
@@ -57,7 +56,6 @@ def weightedMedian_chunk(D,W):
         sumVec = np.cumsum(wSort[:i])
     sumVec = np.reshape(sumVec, (1,sumVec.shape[0]))
     
-
     wMed = np.array([])
     j = 0
     while wMed.size == 0:
@@ -68,7 +66,3 @@ def weightedMedian_chunk(D,W):
         raise Exception('weightedMedian:unknownError The weighted median could not be calculated.')
     
     return wMed
-
-# a = np.array([[1],[2],[3]])
-# b = np.array([[22],[1],[4]])
-# print(weightedMedian(a,b,3))

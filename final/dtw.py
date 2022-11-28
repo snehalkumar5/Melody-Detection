@@ -20,36 +20,34 @@ def dtw(x,y,addD=None):
     m = np.zeros((N1,N2),dtype=np.int8)
     #viterbi
     for n1 in range(N1):
-        # print(n1)
         for n2 in range(N2):
-            # print(n1,n2)
             if n1==0 and n2==0:
                 # no possible movements
-                m[n1,n2]=0
+                m[n1][n2]=0
             elif n1==0:
                 # only reachable from a lower n2
-                m[n1,n2] = 1
-                d[n1,n2] = d[n1,n2-1]+d[n1,n2]
+                m[n1][n2] = 1
+                d[n1][n2] = d[n1][n2-1]+d[n1][n2]
             elif n2==0:
                 # only reachable from a lower n1
-                m[n1,n2] = 10
-                d[n1,n2] = d[n1-1,n2]+d[n1,n2]
+                m[n1][n2] = 10
+                d[n1][n2] = d[n1-1][n2]+d[n1][n2]
             else:
                 # reachable from 3 different points: vertical, horizontal, diagonal
-                dbackup = d[n1,n2]
-                d[n1,n2] = np.inf
-                dtry = d[n1,n2-1] + dbackup
-                if dtry < d[n1,n2]:
-                    m[n1,n2] = 1
-                    d[n1,n2] = dtry
-                dtry = d[n1-1,n2] + dbackup
-                if dtry<d[n1,n2]:
-                    m[n1,n2] = 10
-                    d[n1,n2] = dtry
-                dtry = d[n1-1,n2-1] + 1.5*dbackup
-                if dtry < d[n1,n2]:
-                    m[n1,n2]=11
-                    d[n1,n2]=dtry
+                dbackup = d[n1][n2]
+                d[n1][n2] = np.inf
+                dtry = d[n1][n2-1] + dbackup
+                if dtry < d[n1][n2]:
+                    m[n1][n2] = 1
+                    d[n1][n2] = dtry
+                dtry = d[n1-1][n2] + dbackup
+                if dtry < d[n1][n2]:
+                    m[n1][n2] = 10
+                    d[n1][n2] = dtry
+                dtry = d[n1-1][n2-1] + 1.5*dbackup
+                if dtry < d[n1][n2]:
+                    m[n1][n2]=11
+                    d[n1][n2]=dtry
     # global distance
     avd=d[N1-1,N2-1]
     # free space
@@ -60,10 +58,8 @@ def dtw(x,y,addD=None):
     n1 = N1-1
     n2 = N2-1
     while n1>0 or n2>0:
-        # print(m[n1,n2])
         ind1 = [n1] + ind1
         ind2 = [n2] + ind2
-        # print(ind1)
         if m[n1,n2]==1:
             n2 = n2-1
         elif m[n1,n2]==10:
@@ -72,7 +68,7 @@ def dtw(x,y,addD=None):
             n1 = n1-1
             n2 = n2-1 
 
-    ind1 = [1] + ind1
-    ind2 = [1] + ind2
+    ind1 = [0] + ind1
+    ind2 = [0] + ind2
 
     return ind1,ind2,avd
