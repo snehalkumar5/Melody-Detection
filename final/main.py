@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import scipy.io
 import subprocess
+from sys import platform
 import queue, threading, sys, time
 import sounddevice as sd
 import soundfile as sf
@@ -48,7 +49,6 @@ def stop():
     recorder.join()
     recorder = False
 
-
 def getNum(name):
     df = pd.read_excel(name+'.xls')
     a=len(df)
@@ -85,13 +85,13 @@ class SampleApp(tk.Tk):
         # the container is where we'll stack a bunch of frames
         # on top of each other, then the one we want visible
         # will be raised above the others
-        container = tk.Frame(self,bg='#e4f0e6')
+        container = tk.Frame(self,bg='#c1ddc6')
         container.pack(expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, PageEasy, PageMedium, PageHard):
+        for F in (PageFinal ,StartPage, PageEasy, PageMedium, PageHard,PageTryAgain):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -101,13 +101,12 @@ class SampleApp(tk.Tk):
             # will be the one that is visible.
             frame.grid(row=0, column=0, sticky="nsew")
 
-        self.show_frame("StartPage")
+        self.show_frame("PageTryAgain")
 
     def show_frame(self, page_name):
         '''Show a frame for the given page name'''
         frame = self.frames[page_name]
         frame.tkraise()
-
 
 class StartPage(tk.Frame):
 
@@ -249,10 +248,6 @@ class PageEasy(tk.Frame):
         self.canvas = FigureCanvasTkAgg(fig, master=window)  # A tk.DrawingArea.
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        
-        
-
-
 
     def plot(self,window):
         try: 
@@ -284,17 +279,23 @@ class PageEasy(tk.Frame):
     def recordVoice(self):
         self.recorded = True
         fs=16000
-        try:
-            os.remove("../results/"+self.spkrFileName+".wav")
-        except:
-            pass
-        self.p = subprocess.Popen(["python3","./soundrec.py", "../results/"+str(self.spkrFileName)+".wav"])
+        # try:
+        os.remove("../results/"+self.spkrFileName+".wav")
+        # except:
+            # pass
+        if platform == "linux" or platform == "linux2":
+            self.p = subprocess.Popen(["python3","./soundrec.py", "../results/"+str(self.spkrFileName)+".wav"])
+        else:
+            self.p = subprocess.Popen(["python","./soundrec.py", "../results/"+str(self.spkrFileName)+".wav"])
         sd.wait()
 
     def stopRecordVoice(self):
         p = self.p
-        p.send_signal(signal.SIGINT)
-        sd.wait()
+        if platform == "linux" or platform == "linux2":
+            p.send_signal(signal.SIGINT)
+        else:
+            p.send_signal(signal.CTRL_C_EVENT)
+        p.wait()
         s,a = read("../results/"+self.spkrFileName+".wav")
         # print(a.shape)
         c = np.reshape(np.array(a,dtype=np.float16),(1,a.shape[0]))
@@ -516,7 +517,6 @@ class PageMedium(tk.Frame):
         button = tk.Button(self, text="Go to the start page",
                            command=lambda: controller.show_frame("StartPage"))
         # button.pack()
-
 class PageHard(tk.Frame):
 
     def __init__(self, parent, controller):
@@ -546,6 +546,99 @@ class PageHard(tk.Frame):
         # print(a.shape)
         c = np.reshape(np.array(a,dtype=np.float16),(1,a.shape[0]))
         np.save("../results/"+self.spkrFileName+".npy", c)
+
+class PageFinal(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        self.recorded = False
+        main = tk.Frame(self)
+        main.configure(width=1055,height=1080,background='#c1ddc6')
+        main.grid(row=0,column=0)
+
+        titleFrame = tk.Frame(main)
+        titleFrame.configure(width=500,height=100,background='#c1ddc6',padx=70,pady=100)
+        titleFrame.grid(row=0,column=0)
+
+        label = tk.Label(titleFrame, text="LET'S DO THE CONVERSATION IN RIGHT TONE", font=controller.title_font,bg='#c1ddc6',fg='#993300')
+        label.grid(row=0,column=0)
+
+        titleFrame2 = tk.Frame(main)
+        titleFrame2.configure(width=500,height=100,background='#e4f0e6',pady=50)
+        titleFrame2.grid(row=1,column=0)
+
+        label = tk.Label(titleFrame2, text="CONGRATS !!!!! YOU'RE AN", font=tkfont.Font(family='arial', size=40, weight="bold"),bg='#e4f0e6',fg='black',)
+        label.grid(row=0,column=0)
+
+        titleFrame3 = tk.Frame(main)
+        titleFrame3.configure(width=500,height=100,background='#e4f0e6',pady=25,padx=150)
+        titleFrame3.grid(row=2,column=0)
+
+        label = tk.Label(titleFrame3, text="EXPERT NOW :)", font=tkfont.Font(family='arial', size=40, weight="bold"),bg='#e4f0e6',fg='black',)
+        label.grid(row=0,column=0)
+
+        buttonFrame = tk.Frame(main)
+        buttonFrame.configure(width=500,height=300,background='#c1ddc6',pady=65)
+        buttonFrame.grid(row=3,column=0)
+        label = tk.Label(buttonFrame, text="WANT TO PLAY AGAIN ??", font=tkfont.Font(family='arial', size=20, weight="bold"),pady=30,bg='#c1ddc6')
+        label.grid(row=0,column=2)
+        button1 = tk.Button(buttonFrame, text="YES",
+                            command=lambda: controller.show_frame("PageEasy"),padx=20,pady=15,bg='#ff99c8')
+        button1.grid(row=1,column=1)
+        button2 = tk.Button(buttonFrame, text="NO",
+                            command=lambda: controller.show_frame("PageMedium"),padx=20,pady=15,bg='#ff99c8')
+        button2.grid(row=1,column=3)
+
+class PageTryAgain(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        self.recorded = False
+        main = tk.Frame(self)
+        main.configure(width=1055,height=1080,background='#c1ddc6')
+        main.grid(row=0,column=0)
+
+        titleFrame = tk.Frame(main)
+        titleFrame.configure(width=500,height=100,background='#c1ddc6',padx=70,pady=50)
+        titleFrame.grid(row=0,column=0)
+
+        label = tk.Label(titleFrame, text="LET'S DO THE CONVERSATION IN RIGHT TONE", font=controller.title_font,bg='#c1ddc6',fg='#993300')
+        label.grid(row=0,column=0)
+
+        titleFrame2 = tk.Frame(main)
+        titleFrame2.configure(width=500,height=100,background='#e4f0e6',pady=30)
+        titleFrame2.grid(row=1,column=0)
+        
+        label = tk.Label(titleFrame2, text="OOPS !! TRY AGAIN :(", font=tkfont.Font(family='arial', size=30, weight="bold"),bg='#e4f0e6',fg='black',)
+        label.grid(row=0,column=0)
+
+        fig = Figure(figsize=(5, 4), dpi=70)
+        ax = fig.add_subplot(111)
+
+        buttonFrame = tk.Frame(main)
+        buttonFrame.configure(width=500,height=300,background='#c1ddc6',pady=20)
+        buttonFrame.grid(row=2,column=0)
+        # ax.plot(styPch, color='blue', label="Expert")
+        try: 
+            self.canvas.get_tk_widget().destroy()
+        except:
+            pass 
+        # ax.set_yticks(yticks, minor=False)
+        # print([str(round(t,2)) + 'x' for t in yticks])
+        ax.set_yticklabels([str(round(t,2)) + 'x' for t in []], fontdict=None, minor=False)
+        # ax.plot(expertPattern, color='blue', label="Expert")
+        # ax.plot(speakerPattern, color='green', label="Speaker")
+        ax.set_title("What you said (Red)")
+        self.canvas = FigureCanvasTkAgg(fig, master=buttonFrame)  # A tk.DrawingArea.
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        buttonFrame = tk.Frame(main)
+        buttonFrame.configure(width=500,height=300,background='#c1ddc6',pady=60)
+        buttonFrame.grid(row=3,column=0)
+        button1 = tk.Button(buttonFrame, text="OK",
+                            command=lambda: controller.show_frame("PageEasy"),padx=20,pady=15,bg='#ff99c8')
+        button1.grid(row=0,column=0)
 
 
 if __name__ == "__main__":
