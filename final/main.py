@@ -1,12 +1,17 @@
 
+import os
 import tkinter as tk                # python 3
 from tkinter import font as tkfont  # python 3
 import pandas as pd
 import numpy as np
 import scipy.io
-from playsound import playsound
+import subprocess
+import queue, threading, sys, time
 import sounddevice as sd
-from scipy.io.wavfile import write
+import soundfile as sf
+from playsound import playsound
+import signal
+from scipy.io.wavfile import write, read
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.backend_bases import key_press_handler
@@ -14,8 +19,38 @@ from matplotlib.figure import Figure
 from createSpeakerGraph import createSpeakerGraph
 from computeScore import computeScore
 
+q = queue.Queue()
+recorder = False
+
+subtype = 'PCM_16'
+dtype = 'int16' 
+
+def rec(f):
+    with sf.SoundFile(f, mode='w', samplerate=16000, 
+                      subtype=subtype, channels=1) as file:
+        with sd.InputStream(samplerate=16000.0, dtype=dtype, 
+                            channels=1, callback=save):
+            while getattr(recorder, "record", True):
+                file.write(q.get())
+
+def save(indata, frames, time, status):
+    q.put(indata.copy())
+
+def start(f):
+    global recorder
+    recorder = threading.Thread(target=rec(f))
+    recorder.record = True
+    recorder.start()
+
+def stop():
+    global recorder
+    recorder.record = False
+    recorder.join()
+    recorder = False
+
+
 def getNum(name):
-    df = pd.read_excel(name+'.xlsx')
+    df = pd.read_excel(name+'.xls')
     a=len(df)
     i = 1
     if(a==21):
@@ -246,23 +281,30 @@ class PageEasy(tk.Frame):
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-    
     def recordVoice(self):
-        second = 0.1
-        fs = 16000
-        sd.default.samplerate = fs
-        sd.default.channels = 1
-        record_voice = sd.rec( int( second * fs ), dtype='float64')
+        self.recorded = True
+        fs=16000
+        try:
+            os.remove("../results/"+self.spkrFileName+".wav")
+        except:
+            pass
+        self.p = subprocess.Popen(["python3","./soundrec.py", "../results/"+str(self.spkrFileName)+".wav"])
         sd.wait()
-        c = np.reshape(np.array(record_voice,dtype=np.float16),(1,record_voice.shape[0]))
+
+    def stopRecordVoice(self):
+        p = self.p
+        p.send_signal(signal.SIGINT)
+        sd.wait()
+        s,a = read("../results/"+self.spkrFileName+".wav")
+        # print(a.shape)
+        c = np.reshape(np.array(a,dtype=np.float16),(1,a.shape[0]))
         np.save("../results/"+self.spkrFileName+".npy", c)
-        write("../results/"+self.spkrFileName+".wav", fs, record_voice)
 
     def __init__(self, parent, controller):
         self.sysFileName,self.sysText,self.spkrFileName,self.spkrText = getNum("EASY")
         tk.Frame.__init__(self, parent)
         self.controller = controller
-        
+        self.recorded = False
         main = tk.Frame(self)
         main.configure(width=1000,height=1080,background='#c1ddc6')
         main.grid(row=0,column=0)
@@ -314,7 +356,8 @@ class PageEasy(tk.Frame):
         button1.grid(row=0,column=0)
 
         button1 = tk.Button(buttonFrame22, text="EXIT",
-                            command=lambda: playsound('../wav/'+self.sysFileName+'.wav'),width=10,height=2,bg='#bad4f4')
+                            command=lambda:  controller.show_frame("StartPage"),width=10,height=2,bg='#bad4f4')
+                            # command=lambda: playsound('../wav/'+self.sysFileName+'.wav'),width=10,height=2,bg='#bad4f4')
         button1.grid(row=0,column=0)
 
         button1 = tk.Button(systemFrame, text="PLAY",
@@ -344,12 +387,14 @@ class PageEasy(tk.Frame):
         buttonFrame11.configure(width=120,height=300,bg='#e4f0e6',padx=10)
         buttonFrame11.grid(row=0,column=1)
         button1 = tk.Button(buttonFrame12, text="Start Recording",
-                            command=lambda: self.recordVoice(),width=12,height=2,bg='#bad4f4')
+                            command=self.recordVoice,width=12,height=2,bg='#bad4f4')
         button1.grid(row=0,column=0)
-
+        button1 = tk.Button(buttonFrame12, text="Stop Recording",
+                            command=self.stopRecordVoice,width=12,height=2,bg='#bad4f4')
+        button1.grid(row=0,column=1)
         button2 = tk.Button(buttonFrame11, text="Listen",
                             command=lambda: playsound("../results/"+self.spkrFileName+".wav"),width=10,height=2,bg='#bad4f4')
-        button2.grid(row=0,column=1)
+        button2.grid(row=0,column=2)
 
 
         buttonFrame4 = tk.Frame(main)
@@ -359,6 +404,109 @@ class PageEasy(tk.Frame):
         self.plot(graphFrame)
 
 class PageMedium(tk.Frame):
+   
+    def submit(self,window):
+        done = createSpeakerGraph(self.spkrFileName+".wav")
+        if done == 0:
+            score = 0
+        else:
+            score = computeScore(self.spkrFileName+".wav")
+        print('score:',score)
+
+        expertGraphDir= '../expertGraphs/'
+        speakerGraphDir= '../results/'
+
+        strr = str(expertGraphDir) + str(self.spkrFileName) + '.mat'
+        styPch = scipy.io.loadmat(strr)
+        styPch = styPch['styPch']
+        styPch = styPch[~np.isnan(styPch)]
+        styPch = np.array(styPch).astype('float64')
+
+
+        expertPattern= styPch
+    
+        strr = str(speakerGraphDir) + str(self.spkrFileName) + '.npy'
+        styPch = np.load(strr)
+        maxPer= np.max(styPch)
+        minPer= np.amin(styPch)
+        normPch= 0
+
+        speakerPattern= styPch
+
+        expertPattern = expertPattern[np.logical_not(np.isnan(expertPattern))]
+        maxPerEx= np.max(expertPattern)
+        minPerEx= np.amin(expertPattern)
+        speakerPattern = speakerPattern[np.logical_not(np.isnan(speakerPattern))]
+        
+        yticks = np.array([minPer,normPch, maxPer, minPerEx, maxPerEx])
+        yticks = sorted(yticks)
+        fig = Figure(figsize=(5, 4), dpi=70)
+        ax = fig.add_subplot(111)
+
+        
+        ax.plot(styPch, color='blue', label="Expert")
+        try: 
+            self.canvas.get_tk_widget().destroy()
+        except:
+            pass 
+        ax.set_yticks(yticks, minor=False)
+        print([str(round(t,2)) + 'x' for t in yticks])
+        ax.set_yticklabels([str(round(t,2)) + 'x' for t in yticks], fontdict=None, minor=False)
+        ax.plot(expertPattern, color='blue', label="Expert")
+        ax.plot(speakerPattern, color='green', label="Speaker")
+        ax.set_title("What you said (Green)")
+        self.canvas = FigureCanvasTkAgg(fig, master=window)  # A tk.DrawingArea.
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+      
+      
+    def plot(self,window):
+        try: 
+            self.canvas.get_tk_widget().destroy()
+        except:
+            pass 
+        expertGraphDir= '../expertGraphs/'
+        strr = str(expertGraphDir) + str(self.spkrFileName) + '.mat'
+        styPch = scipy.io.loadmat(strr)
+        styPch = styPch['styPch']
+        styPch = styPch[~np.isnan(styPch)]
+        styPch = np.array(styPch).astype('float64')
+        fig = Figure(figsize=(5, 4), dpi=70)
+        maxPerEx= np.max(styPch)
+        minPerEx= np.amin(styPch)
+        yticks = np.array([minPerEx, maxPerEx])
+        yticks = sorted(yticks)
+        # yticks = np.array([minPerEx,0, maxPerEx])
+        ax = fig.add_subplot(111)
+        ax.set_title("What would be expected")
+        ax.set_yticks(yticks, minor=False)
+        print([str(round(t,2)) + 'x' for t in yticks])
+        ax.set_yticklabels([str(round(t,2)) + 'x' for t in yticks], fontdict=None, minor=False)
+        ax.plot(styPch, color='blue', label="Expert")
+        self.canvas = FigureCanvasTkAgg(fig, master=window)  # A tk.DrawingArea.
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+    
+    def recordVoice(self):
+        self.recorded = True
+        fs=16000
+        try:
+            os.remove("../results/"+self.spkrFileName+".wav")
+        except:
+            pass
+        self.p = subprocess.Popen(["python3","./soundrec.py", "../results/"+str(self.spkrFileName)+".wav"])
+        sd.wait()
+
+    def stopRecordVoice(self):
+        p = self.p
+        p.send_signal(signal.SIGINT)
+        sd.wait()
+        s,a = read("../results/"+self.spkrFileName+".wav")
+        # print(a.shape)
+        c = np.reshape(np.array(a,dtype=np.float16),(1,a.shape[0]))
+        np.save("../results/"+self.spkrFileName+".npy", c)
+
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
@@ -379,6 +527,26 @@ class PageHard(tk.Frame):
         button = tk.Button(self, text="Go to the start page",
                            command=lambda: controller.show_frame("StartPage"))
         # button.pack()
+
+    def recordVoice(self):
+        self.recorded = True
+        fs=16000
+        try:
+            os.remove("../results/"+self.spkrFileName+".wav")
+        except:
+            pass
+        self.p = subprocess.Popen(["python3","./soundrec.py", "../results/"+str(self.spkrFileName)+".wav"])
+        sd.wait()
+
+    def stopRecordVoice(self):
+        p = self.p
+        p.send_signal(signal.SIGINT)
+        sd.wait()
+        s,a = read("../results/"+self.spkrFileName+".wav")
+        # print(a.shape)
+        c = np.reshape(np.array(a,dtype=np.float16),(1,a.shape[0]))
+        np.save("../results/"+self.spkrFileName+".npy", c)
+
 
 if __name__ == "__main__":
     app = SampleApp()
