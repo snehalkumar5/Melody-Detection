@@ -12,16 +12,12 @@ def computeScore(currFile):
     strr = str(expertGraphDir) + str(currFile) + '.mat'
     styPch = scipy.io.loadmat(strr)
     styPch = styPch['styPch']
+    styPch = np.array(styPch).astype('float64')
     
-    # print('stypch', styPch,type(styPch))
     expertPattern= styPch
-    strr = str(speakerGraphDir) + str(currFile) + '.mat'
-    while not os.path.exists(strr):
-        sleep(0.1)
+    strr = str(speakerGraphDir) + str(currFile) + '.npy'
+    styPch = np.load(strr)
 
-    strr = str(speakerGraphDir) + str(currFile) + '.mat'
-    styPch = scipy.io.loadmat(strr)
-    styPch = styPch['styPch'][0]
     speakerPattern= styPch
 
     expertPattern = expertPattern[np.logical_not(np.isnan(expertPattern))]
@@ -30,17 +26,13 @@ def computeScore(currFile):
     expertDur= len(expertPattern)
     spkrDur= len(speakerPattern)
     chngPer= abs(expertDur-spkrDur)/expertDur
-
-    if chngPer<0.25:
+    if chngPer<0.3:
         ind1,ind2,_= dtw(expertPattern,speakerPattern)
         alignSpeakerPattern = speakerPattern[ind2]
         alignExpertPattern = expertPattern[ind1]
         temp= np.corrcoef(alignSpeakerPattern,alignExpertPattern)
         score= temp[0][1]
-        print(score)
     else:
         score= 0
     
     return score
-
-# computeScore('227')
