@@ -973,8 +973,49 @@ class PageFinal(tk.Frame):
         button2.grid(row=1,column=3)
 
 class PageTryAgain(tk.Frame):
-    def update_file(self, filename):
-        self.spk
+
+    def plot(self,spkrFileName):
+        expertGraphDir= '../expertGraphs/'
+        speakerGraphDir= '../results/'
+
+        strr = str(expertGraphDir) + str(spkrFileName) + '.mat'
+        styPch = scipy.io.loadmat(strr)
+        styPch = styPch['styPch']
+        styPch = styPch[~np.isnan(styPch)]
+        styPch = np.array(styPch).astype('float64')
+        expertPattern= styPch
+    
+        strr = str(speakerGraphDir) + str(spkrFileName) + '.npy'
+        styPch = np.load(strr)
+        maxPer= np.max(styPch)
+        minPer= np.amin(styPch)
+        normPch= 0
+        speakerPattern= styPch
+
+        expertPattern = expertPattern[np.logical_not(np.isnan(expertPattern))]
+        maxPerEx= np.max(expertPattern)
+        minPerEx= np.amin(expertPattern)
+        speakerPattern = speakerPattern[np.logical_not(np.isnan(speakerPattern))]
+        
+        yticks = np.array([minPer,normPch, maxPer, minPerEx, maxPerEx])
+        yticks = sorted(yticks)
+        fig = Figure(figsize=(5, 4), dpi=70)
+        ax = fig.add_subplot(111)
+
+        try: 
+            self.canvas.get_tk_widget().destroy()
+        except:
+            pass 
+
+        ax.set_yticks(yticks, minor=False)
+        print([str(round(t,2)) + 'x' for t in yticks])
+        ax.set_yticklabels([str(round(t,2)) + 'x' for t in yticks], fontdict=None, minor=False)
+        ax.plot(expertPattern, color='blue', label="Expert")
+        ax.plot(speakerPattern, color='red', label="Speaker")
+        ax.set_title("What you said (Red)")
+        self.canvas = FigureCanvasTkAgg(fig, master=self.graphFrame)  # A tk.DrawingArea.
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
@@ -998,42 +1039,11 @@ class PageTryAgain(tk.Frame):
         
         label = tk.Label(titleFrame2, text="OOPS !! TRY AGAIN :(", font=tkfont.Font(family='arial', size=30, weight="bold"),bg='#e4f0e6',fg='black',)
         label.grid(row=0,column=0)
-
-        fig = Figure(figsize=(5, 4), dpi=70)
-        ax = fig.add_subplot(111)
         
-        buttonFrame = tk.Frame(main)
-        buttonFrame.configure(width=500,height=300,background='#c1ddc6',pady=20)
-        buttonFrame.grid(row=2,column=0)
-        # ax.plot(styPch, color='blue', label="Expert")
+        self.graphFrame = tk.Frame(main)
+        self.graphFrame.configure(width=500,height=300,background='#c1ddc6',pady=20)
+        self.graphFrame.grid(row=2,column=0)
         
-        try: 
-            self.canvas.get_tk_widget().destroy()
-        except:
-            pass 
-        expertGraphDir= '../expertGraphs/'
-        strr = str(expertGraphDir) + str(self.spkrFileName) + '.mat'
-        styPch = scipy.io.loadmat(strr)
-        styPch = styPch['styPch']
-        styPch = styPch[~np.isnan(styPch)]
-        styPch = np.array(styPch).astype('float64')
-        fig = Figure(figsize=(5, 4), dpi=70)
-        maxPerEx= np.max(styPch)
-        minPerEx= np.amin(styPch)
-        yticks = np.array([minPerEx, maxPerEx])
-        yticks = sorted(yticks)
-        # yticks = np.array([minPerEx,0, maxPerEx])
-        ax = fig.add_subplot(111)
-        ax.set_title("What you have said (Red)")
-        ax.set_yticks(yticks, minor=False)
-        print([str(round(t,2)) + 'x' for t in yticks])
-        ax.set_yticklabels([str(round(t,2)) + 'x' for t in yticks], fontdict=None, minor=False)
-        ax.plot(styPch, color='red', label="Expert")
-
-        self.canvas = FigureCanvasTkAgg(fig, master=buttonFrame)  # A tk.DrawingArea.
-        self.canvas.draw()
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
         buttonFrame = tk.Frame(main)
         buttonFrame.configure(width=500,height=300,background='#c1ddc6',pady=60)
         buttonFrame.grid(row=3,column=0)
@@ -1105,7 +1115,6 @@ class PageGoAhead(tk.Frame):
         fig = Figure(figsize=(5, 4), dpi=70)
         ax = fig.add_subplot(111)
 
-        ax.plot(styPch, color='blue', label="Expert")
         try: 
             self.canvas.get_tk_widget().destroy()
         except:
