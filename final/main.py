@@ -96,7 +96,7 @@ class SampleApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
         self.container = container
         self.frames = {}
-        for F in (PageGoAhead, PageFinal, StartPage, PageEasy,
+        for F in (PageFinal, StartPage, PageEasy, PageGoAhead
         #  PageMedium, PageHard, 
         #  PageTryAgain
          ):
@@ -111,15 +111,14 @@ class SampleApp(tk.Tk):
 
         self.show_frame("StartPage")
 
-    # def add_frame(self, F):
-        # page_name = F.__name__
-        # frame = F(parent=self.container, controller=self)
-        # self.frames[page_name] = frame
-
     def show_frame(self, page_name):
         '''Show a frame for the given page name'''
         frame = self.frames[page_name]
         frame.tkraise()
+
+    def return_frame(self, page_name):
+        frame = self.frames[page_name]
+        return frame
 
 class StartPage(tk.Frame):
 
@@ -208,9 +207,10 @@ class StartPage(tk.Frame):
 class PageEasy(tk.Frame):
 
     def submit(self,window):
-        frame = self.controller.frames["PageGoAhead"]
+        frame = self.controller.return_frame("PageGoAhead")
         frame.plot(self.spkrFileName)
         # self.spkrFileName = "141"
+        self.controller.show_frame("PageGoAhead")
         done = createSpeakerGraph(self.spkrFileName+".wav")
         if done == 0:
             score = 0
@@ -975,6 +975,7 @@ class PageFinal(tk.Frame):
 class PageTryAgain(tk.Frame):
     def update_file(self, filename):
         self.spk
+
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.spkrFileName = ""
@@ -1042,7 +1043,41 @@ class PageTryAgain(tk.Frame):
 
 class PageGoAhead(tk.Frame):
 
-    def plot(self,window,spkrFileName):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        self.recorded = False
+        main = tk.Frame(self)
+        main.configure(width=1055,height=1080,background='#c1ddc6')
+        main.grid(row=0,column=0)
+
+        titleFrame = tk.Frame(main)
+        titleFrame.configure(width=500,height=100,background='#c1ddc6',padx=70,pady=50)
+        titleFrame.grid(row=0,column=0)
+
+        label = tk.Label(titleFrame, text="LET'S DO THE CONVERSATION IN RIGHT TONE", font=controller.title_font,bg='#c1ddc6',fg='#993300')
+        label.grid(row=0,column=0)
+
+        titleFrame2 = tk.Frame(main)
+        titleFrame2.configure(width=500,height=100,background='#e4f0e6',pady=30)
+        titleFrame2.grid(row=1,column=0)
+        
+        label = tk.Label(titleFrame2, text="GO AHEAD !!!", font=tkfont.Font(family='arial', size=30, weight="bold"),bg='#e4f0e6',fg='black',)
+        label.grid(row=0,column=0)
+
+        self.graphFrame = tk.Frame(main)
+        self.graphFrame.configure(width=500,height=300,background='#c1ddc6',pady=20)
+        self.graphFrame.grid(row=2,column=0)
+        # ax.plot(styPch, color='blue', label="Expert")
+
+        buttonFrame = tk.Frame(main)
+        buttonFrame.configure(width=500,height=300,background='#c1ddc6',pady=60)
+        buttonFrame.grid(row=3,column=0)
+        button1 = tk.Button(buttonFrame, text="OK",
+                            command=lambda: controller.show_frame("PageEasy"),padx=20,pady=15,bg='#ff99c8')
+        button1.grid(row=0,column=0)
+
+    def plot(self,spkrFileName):
         expertGraphDir= '../expertGraphs/'
         speakerGraphDir= '../results/'
 
@@ -1082,47 +1117,9 @@ class PageGoAhead(tk.Frame):
         ax.plot(expertPattern, color='blue', label="Expert")
         ax.plot(speakerPattern, color='green', label="Speaker")
         ax.set_title("What you said (Green)")
-        self.canvas = FigureCanvasTkAgg(fig, master=window)  # A tk.DrawingArea.
+        self.canvas = FigureCanvasTkAgg(fig, master=self.graphFrame)  # A tk.DrawingArea.
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-    def _init_(self, parent, controller):
-        tk.Frame._init_(self, parent)
-        self.controller = controller
-        self.recorded = False
-        main = tk.Frame(self)
-        main.configure(width=1055,height=1080,background='#c1ddc6')
-        main.grid(row=0,column=0)
-
-        titleFrame = tk.Frame(main)
-        titleFrame.configure(width=500,height=100,background='#c1ddc6',padx=70,pady=50)
-        titleFrame.grid(row=0,column=0)
-
-        label = tk.Label(titleFrame, text="LET'S DO THE CONVERSATION IN RIGHT TONE", font=controller.title_font,bg='#c1ddc6',fg='#993300')
-        label.grid(row=0,column=0)
-
-        titleFrame2 = tk.Frame(main)
-        titleFrame2.configure(width=500,height=100,background='#e4f0e6',pady=30)
-        titleFrame2.grid(row=1,column=0)
-        
-        label = tk.Label(titleFrame2, text="GO AHEAD !!!", font=tkfont.Font(family='arial', size=30, weight="bold"),bg='#e4f0e6',fg='black',)
-        label.grid(row=0,column=0)
-
-        fig = Figure(figsize=(5, 4), dpi=70)
-        ax = fig.add_subplot(111)
-
-        self.graphFrame = tk.Frame(main)
-        self.graphFrame.configure(width=500,height=300,background='#c1ddc6',pady=20)
-        self.graphFrame.grid(row=2,column=0)
-        # ax.plot(styPch, color='blue', label="Expert")
-
-        buttonFrame = tk.Frame(main)
-        buttonFrame.configure(width=500,height=300,background='#c1ddc6',pady=60)
-        buttonFrame.grid(row=3,column=0)
-        button1 = tk.Button(buttonFrame, text="OK",
-                            command=lambda: controller.show_frame("PageEasy"),padx=20,pady=15,bg='#ff99c8')
-        button1.grid(row=0,column=0)
-
 
 class Gamefig1(tk.Frame):
 
