@@ -15,10 +15,6 @@ def computeScore(currFile):
     styPch = np.array(styPch).astype('float64')
     
     expertPattern= styPch
-    strr = str(speakerGraphDir) + str(currFile) + '.mat'
-    while not os.path.exists(strr):
-        sleep(0.1)
-
     strr = str(speakerGraphDir) + str(currFile) + '.npy'
     styPch = np.load(strr)
 
