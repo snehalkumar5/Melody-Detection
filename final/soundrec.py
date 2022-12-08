@@ -1,7 +1,4 @@
 import argparse
-import tempfile
-# from multiprocessing import Queue
-import sys
 import queue
 import sounddevice as sd
 import soundfile as sf

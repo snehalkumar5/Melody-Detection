@@ -38,14 +38,11 @@ class PageGoAhead(tk.Frame):
         buttonFrame.configure(width=500,height=300,background='#c1ddc6',pady=60)
         buttonFrame.grid(row=3,column=0)
         button1 = tk.Button(buttonFrame, text="OK",
-                            command= self.next_level
-                            # lambda: controller.show_frame("PageEasy")
-                            ,padx=20,pady=15,bg='#ff99c8')
+                            command= self.next_level,padx=20,pady=15,bg='#ff99c8')
         button1.grid(row=0,column=0)
 
     def next_level(self):
         frame = self.controller.return_frame(self.next_frame)
-        frame.canvas.get_tk_widget().destroy()
         if frame.next_level() == True:
             self.controller.show_frame(self.next_frame)
         else:

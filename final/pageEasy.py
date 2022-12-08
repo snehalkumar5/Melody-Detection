@@ -74,7 +74,7 @@ class PageEasy(tk.Frame):
         button1.grid(row=0,column=0)
 
         button1 = tk.Button(buttonFrame22, text="Exit",
-                            command=lambda:  controller.show_frame("StartPage"),width=10,height=2,bg='#bad4f4')
+                            command=lambda:  controller.show_frame("PageStart"),width=10,height=2,bg='#bad4f4')
         button1.grid(row=0,column=0)
        
         button1 = tk.Button(systemFrame, text="Play",
@@ -153,7 +153,7 @@ class PageEasy(tk.Frame):
         self.score = score
         if score<0.01:
             frame = self.controller.return_frame("PageTryAgain")
-            frame.plot(self.spkrFileName)
+            frame.plot(self.spkrFileName, "PageEasy")
             self.controller.show_frame("PageTryAgain")
         else:
             frame = self.controller.return_frame("PageGoAhead")
@@ -193,7 +193,7 @@ class PageEasy(tk.Frame):
 
     def next_level(self):
         print(self.level - self.startlevel)
-        if self.level - self.startlevel == 4:
+        if self.level - self.startlevel == 1:
             self.controller.show_frame("PageFinal")
             return False
         else:        

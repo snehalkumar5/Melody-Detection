@@ -74,7 +74,7 @@ class PageMedium(tk.Frame):
         button1.grid(row=0,column=0)
 
         button1 = tk.Button(buttonFrame22, text="Exit",
-                            command=lambda:  controller.show_frame("StartPage"),width=10,height=2,bg='#bad4f4')
+                            command=lambda:  controller.show_frame("PageStart"),width=10,height=2,bg='#bad4f4')
         button1.grid(row=0,column=0)
         
         button1 = tk.Button(systemFrame, text="Play",
@@ -122,7 +122,6 @@ class PageMedium(tk.Frame):
 
     def recordVoice(self):
         self.recorded = True
-        fs=16000
         try:
             os.remove("../results/"+self.spkrFileName+".wav")
         except:
@@ -154,7 +153,7 @@ class PageMedium(tk.Frame):
         self.score = score
         if score<0.01:
             frame = self.controller.return_frame("PageTryAgain")
-            frame.plot(self.spkrFileName)
+            frame.plot(self.spkrFileName, "PageMedium")
             self.controller.show_frame("PageTryAgain")
         else:
             frame = self.controller.return_frame("PageGoAhead")

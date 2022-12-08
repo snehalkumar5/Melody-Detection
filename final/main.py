@@ -7,7 +7,7 @@ from pageGoAhead import PageGoAhead
 from pageHard import PageHard
 from pageMedium import PageMedium
 from pageTryAgain import PageTryAgain
-from startPage import StartPage
+from pageStart import PageStart
 
 
 class SampleApp(tk.Tk):
@@ -24,7 +24,7 @@ class SampleApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
         self.container = container
         self.frames = {}
-        for F in (PageFinal, StartPage, PageEasy, PageGoAhead,
+        for F in (PageFinal, PageStart, PageEasy, PageGoAhead,
          PageMedium, PageHard, PageTryAgain):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
@@ -35,7 +35,7 @@ class SampleApp(tk.Tk):
             # will be the one that is visible.
             frame.grid(row=0, column=0, sticky="nsew")
 
-        self.show_frame("StartPage")
+        self.show_frame("PageStart")
 
     def show_frame(self, page_name):
         '''Show a frame for the given page name'''
