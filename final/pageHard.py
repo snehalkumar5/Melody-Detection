@@ -1,7 +1,8 @@
+import time
 import tkinter as tk                # python 3
-from tkinter import font as tkfont  # python 3
-import tkinter as tk                # python 3
-from tkinter import font as tkfont  # python 3
+from tkinter import HORIZONTAL, font as tkfont  # python 3
+from tkinter.filedialog import askopenfilename
+from tkinter.ttk import Progressbar
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import subprocess
@@ -70,11 +71,11 @@ class PageHard(tk.Frame):
         button1.grid(row=0,column=0)
 
         button1 = tk.Button(buttonFrame112, text="Submit",
-                            command=lambda: self.submit(),width=10,height=2,bg='#bad4f4')
+                            command=lambda: self.submit(),width=10,height=2,bg='#60db69')
         button1.grid(row=0,column=0)
 
         button1 = tk.Button(buttonFrame22, text="Exit",
-                            command=lambda:  controller.show_frame("PageStart"),width=10,height=2,bg='#bad4f4')
+                            command=lambda:  controller.show_frame("PageStart"),width=10,height=2,bg='#eb4034')
         button1.grid(row=0,column=0)
        
         button1 = tk.Button(systemFrame, text="Play",
@@ -109,10 +110,12 @@ class PageHard(tk.Frame):
         button1 = tk.Button(buttonFrame12, text="Stop Recording",
                             command=self.stopRecordVoice,width=12,height=2,bg='#bad4f4')
         button1.grid(row=0,column=1)
-        button2 = tk.Button(buttonFrame11, text="Listen",
+        button2 = tk.Button(buttonFrame12, text="Listen",
                             command=lambda: playsound("../results/"+self.spkrFileName+".wav"),width=10,height=2,bg='#bad4f4')
         button2.grid(row=0,column=2)
-
+        button1 = tk.Button(buttonFrame11, text="Upload",
+                            command=lambda: self.open_file(buttonFrame11),width=10,height=2,bg='#bad4f4')
+        button1.grid(row=0,column=2)
 
         buttonFrame4 = tk.Frame(main)
         buttonFrame4.configure(width=1000,height=300,bg='#c1ddc6')
@@ -120,6 +123,28 @@ class PageHard(tk.Frame):
 
         self.plot(self.graphFrame)
     
+    def open_file(self, frame):
+        file_name = askopenfilename(filetypes=[('Audio Files', '*wav')])
+        if file_name is not None:
+            self.file_upload_name = file_name
+            self.filename = os.path.basename(self.file_upload_name)
+            s,a = read(self.file_upload_name)
+            c = np.reshape(np.array(a,dtype=np.float16),(1,a.shape[0]))
+            np.save("../results/"+self.filename+".npy", c)
+
+            pb1 = Progressbar(frame,
+            orient=HORIZONTAL, 
+            length=20, 
+            mode='determinate'
+            )
+            pb1.grid(row=4, columnspan=3, pady=20)
+            for i in range(5):
+                frame.update_idletasks()
+                pb1['value'] += 20
+                time.sleep(0.5)
+            pb1.destroy()
+            tk.Label(frame, text=str(self.filename)+' Uploaded!', foreground='green').grid(row=4, columnspan=3, pady=10)
+
     def recordVoice(self):
         self.recorded = True
         try:

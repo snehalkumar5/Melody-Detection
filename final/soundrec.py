@@ -48,11 +48,7 @@ def callback(indata, frames, time, status):
     """This is called (from a separate thread) for each audio block."""
     if status:
         print(status)
-    print(indata.shape)
-    print(type(indata))
-    # indata = np.reshape(np.array(indata, dtype=np.float64),(1,indata.shape[0]))
     q.put(indata.copy())
-
 
 try:
     # Make sure the file is opened before recording anything:
@@ -60,9 +56,6 @@ try:
                     channels=args.channels) as file:
         with sd.InputStream(samplerate=args.samplerate,
                             channels=args.channels, callback=callback):
-            print('#' * 80)
-            print('press Ctrl+C to stop the recording')
-            print('#' * 80)
             while True:
                 file.write(q.get())
 
