@@ -11,7 +11,8 @@ import numpy as np
 import pandas as pd
 import signal
 import sounddevice as sd
-from scipy.io.wavfile import read
+import librosa    
+from scipy.io.wavfile import read, write
 from scipy.io import loadmat
 from playsound import playsound
 from createSpeakerGraph import createSpeakerGraph
@@ -123,18 +124,21 @@ class PageEasy(tk.Frame):
 
         self.plot(self.graphFrame)
 
+    def save_speaker_audio(self, audio: np.ndarray):
+        c = np.reshape(np.array(audio, dtype=np.float16),(1,audio.shape[0]))
+        np.save("../results/"+self.spkrFileName+".npy", c)
+
     def open_file(self, frame):
         file_name = askopenfilename(filetypes=[('Audio Files', '*wav')])
         if file_name is not None:
             self.file_upload_name = file_name
             self.filename = os.path.basename(self.file_upload_name)
-            s,a = read(self.file_upload_name)
-            c = np.reshape(np.array(a,dtype=np.float16),(1,a.shape[0]))
-            np.save("../results/"+self.filename+".npy", c)
-
+            a, _ = librosa.load(self.file_upload_name, sr=16000)
+            write("../results/" + self.spkrFileName+".wav",rate=16000,data=a)
+            self.save_speaker_audio(a)
             pb1 = Progressbar(frame,
             orient=HORIZONTAL, 
-            length=20, 
+            length=80, 
             mode='determinate'
             )
             pb1.grid(row=4, columnspan=3, pady=20)
@@ -143,8 +147,6 @@ class PageEasy(tk.Frame):
                 pb1['value'] += 20
                 time.sleep(0.5)
             pb1.destroy()
-            tk.Label(frame, text=str(self.filename)+' Uploaded!', foreground='green').grid(row=4, columnspan=3, pady=10)
-
         
     def recordVoice(self):
         self.recorded = True
@@ -153,7 +155,7 @@ class PageEasy(tk.Frame):
         except:
             pass
         # if platform == "linux" or platform == "linux2":
-        self.p = subprocess.Popen(["python3","./soundrec.py", "../results/"+str(self.spkrFileName)+".wav"])
+        self.p = subprocess.Popen(["python3","./soundrec.py", "../results/"+str(self.spkrFileName)+".wav","-r 16000"])
         # else:
             # self.p = subprocess.Popen(["python","./soundrec.py", "../results/"+str(self.spkrFileName)+".wav"])
         sd.wait()
