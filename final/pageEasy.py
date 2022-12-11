@@ -1,7 +1,8 @@
+import time
 import tkinter as tk                # python 3
-from tkinter import font as tkfont  # python 3
-import tkinter as tk                # python 3
-from tkinter import font as tkfont  # python 3
+from tkinter import HORIZONTAL, font as tkfont  # python 3
+from tkinter.filedialog import askopenfilename
+from tkinter.ttk import Progressbar 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import subprocess
@@ -10,7 +11,8 @@ import numpy as np
 import pandas as pd
 import signal
 import sounddevice as sd
-from scipy.io.wavfile import read
+import librosa    
+from scipy.io.wavfile import read, write
 from scipy.io import loadmat
 from playsound import playsound
 from createSpeakerGraph import createSpeakerGraph
@@ -65,16 +67,16 @@ class PageEasy(tk.Frame):
         buttonFrame112 = tk.Frame(buttonFrame11)
         buttonFrame112.configure(width=50,height=120,bg='#c1ddc6',pady=20)
         buttonFrame112.grid(row=1,column=0)
-        button1 = tk.Button(buttonFrame111, text="Play",
+        button1 = tk.Button(buttonFrame111, text="Expert Audio",
                             command=lambda: playsound('../wav/'+self.spkrFileName+'.wav'),width=10,height=2,bg='#bad4f4')
         button1.grid(row=0,column=0)
 
         button1 = tk.Button(buttonFrame112, text="Submit",
-                            command=lambda: self.submit(self.graphFrame),width=10,height=2,bg='#bad4f4')
+                            command=lambda: self.submit(),width=10,height=2,bg='#60db69')
         button1.grid(row=0,column=0)
 
         button1 = tk.Button(buttonFrame22, text="Exit",
-                            command=lambda:  controller.show_frame("PageStart"),width=10,height=2,bg='#bad4f4')
+                            command=lambda:  controller.show_frame("PageStart"),width=10,height=2,bg='#eb4034')
         button1.grid(row=0,column=0)
        
         button1 = tk.Button(systemFrame, text="Play",
@@ -109,17 +111,43 @@ class PageEasy(tk.Frame):
         button1 = tk.Button(buttonFrame12, text="Stop Recording",
                             command=self.stopRecordVoice,width=12,height=2,bg='#bad4f4')
         button1.grid(row=0,column=1)
-        button2 = tk.Button(buttonFrame11, text="Listen",
+        button2 = tk.Button(buttonFrame12, text="Listen",
                             command=lambda: playsound("../results/"+self.spkrFileName+".wav"),width=10,height=2,bg='#bad4f4')
         button2.grid(row=0,column=2)
-
-
+        button1 = tk.Button(buttonFrame11, text="Upload",
+                            command=lambda: self.open_file(buttonFrame11),width=10,height=2,bg='#bad4f4')
+        button1.grid(row=0,column=2)
+        
         buttonFrame4 = tk.Frame(main)
         buttonFrame4.configure(width=1000,height=300,bg='#c1ddc6')
         buttonFrame4.grid(row=3,column=0)
 
         self.plot(self.graphFrame)
 
+    def save_speaker_audio(self, audio: np.ndarray):
+        c = np.reshape(np.array(audio, dtype=np.float16),(1,audio.shape[0]))
+        np.save("../results/"+self.spkrFileName+".npy", c)
+
+    def open_file(self, frame):
+        file_name = askopenfilename(filetypes=[('Audio Files', '*wav')])
+        if file_name is not None:
+            self.file_upload_name = file_name
+            self.filename = os.path.basename(self.file_upload_name)
+            a, _ = librosa.load(self.file_upload_name, sr=16000)
+            write("../results/" + self.spkrFileName+".wav",rate=16000,data=a)
+            self.save_speaker_audio(a)
+            pb1 = Progressbar(frame,
+            orient=HORIZONTAL, 
+            length=80, 
+            mode='determinate'
+            )
+            pb1.grid(row=4, columnspan=3, pady=20)
+            for i in range(5):
+                frame.update_idletasks()
+                pb1['value'] += 20
+                time.sleep(0.5)
+            pb1.destroy()
+        
     def recordVoice(self):
         self.recorded = True
         try:
@@ -127,7 +155,7 @@ class PageEasy(tk.Frame):
         except:
             pass
         # if platform == "linux" or platform == "linux2":
-        self.p = subprocess.Popen(["python3","./soundrec.py", "../results/"+str(self.spkrFileName)+".wav"])
+        self.p = subprocess.Popen(["python3","./soundrec.py", "../results/"+str(self.spkrFileName)+".wav","-r 16000"])
         # else:
             # self.p = subprocess.Popen(["python","./soundrec.py", "../results/"+str(self.spkrFileName)+".wav"])
         sd.wait()
@@ -143,7 +171,7 @@ class PageEasy(tk.Frame):
         c = np.reshape(np.array(a,dtype=np.float16),(1,a.shape[0]))
         np.save("../results/"+self.spkrFileName+".npy", c)
 
-    def submit(self,window):
+    def submit(self):
         done = createSpeakerGraph(self.spkrFileName+".wav")
         if done == 0:
             score = 0

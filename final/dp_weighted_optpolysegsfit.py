@@ -13,7 +13,6 @@ def dp_weighted_optpolysegsfit(vin,K,P,W):
     POLYNOMIAL PARAMETERS 'p' OF THE K LINE SEGMENTS AND THE BEST FIT
     PIECEWISE POLYNOMIAL SEGMENTS 'y' AND ALSO THE TOTAL MSE 'E' 
     
-    OTHER REQUIRED FUNCTIONS: constr_polyfit.m, polyfit.m, polyval.m
     """
     vin = vin[:,np.newaxis]
     W = W[:,np.newaxis]
