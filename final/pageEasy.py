@@ -221,7 +221,7 @@ class PageEasy(tk.Frame):
 
     def next_level(self):
         print(self.level - self.startlevel)
-        if self.level - self.startlevel == 1:
+        if self.level - self.startlevel == 4:
             self.controller.show_frame("PageFinal")
             return False
         else:        
