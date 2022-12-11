@@ -31,10 +31,6 @@ class PageStart(tk.Frame):
         label = tk.Label(systemFrame, text="System", font=tkfont.Font(family='arial', size=13, weight="bold"),width=50, height=5,bg='#e4f0e6')
         label.grid(row=1,column=0)
 
-        button1 = tk.Button(systemFrame, text="Play",
-                            command=lambda: controller.show_frame("PageEasy"),width=10,height=2,bg='#bad4f4',pady=3)
-        button1.grid(row=2,column=0)
-
         spaceFrame = tk.Frame(dialogueFrame)
         spaceFrame.configure(background='#c1ddc6',width=20,height=360)
         spaceFrame.grid(row=0,column=1)
@@ -47,23 +43,6 @@ class PageStart(tk.Frame):
 
         label = tk.Label(youFrame, text="You", font=tkfont.Font(family='arial', size=13, weight="bold"),width=50, height=5,bg='#e4f0e6')
         label.grid(row=1,column=0)
-
-        buttonFrame1 = tk.Frame(youFrame)
-        buttonFrame1.configure(width=500,height=300,bg='#e4f0e6')
-        buttonFrame1.grid(row=3,column=0)
-        buttonFrame12 = tk.Frame(buttonFrame1)
-        buttonFrame12.configure(width=120,height=300,bg='#e4f0e6',padx=10)
-        buttonFrame12.grid(row=0,column=0)
-        buttonFrame11 = tk.Frame(buttonFrame1)
-        buttonFrame11.configure(width=120,height=300,bg='#e4f0e6',padx=10)
-        buttonFrame11.grid(row=0,column=1)
-        button1 = tk.Button(buttonFrame12, text="Start Recording",
-                            command=lambda: controller.show_frame("PageEasy"),width=12,height=2,bg='#bad4f4')
-        button1.grid(row=0,column=0)
-
-        button2 = tk.Button(buttonFrame11, text="Listen",
-                            command=lambda: controller.show_frame("PageEasy"),width=10,height=2,bg='#bad4f4')
-        button2.grid(row=0,column=1)
 
 
         buttonFrame = tk.Frame(main)
